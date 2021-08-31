@@ -2,6 +2,9 @@ from django.shortcuts import render
 
 # Create your views here.
 from collections import defaultdict
+
+from django.views.decorators.http import require_http_methods
+from requests.models import Response
 from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
@@ -12,7 +15,33 @@ from TeamSPBackend.common.utils import make_json_response, check_user_login, bod
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
 import time, datetime
 from TeamSPBackend.common.utils import transformTimestamp
+import requests
+import json
+from django.http import JsonResponse, HttpResponse
 
+
+baseUrl = 'https://api.github.com/'
+
+def getCommits(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    token = json_body.get("token")
+    owner = json_body.get("owner")
+    repo = json_body.get("repo")
+    url = baseUrl + "repos/" + owner + "/" + repo + "/commits"
+    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
+    convert = json.loads(content.text)
+    list = []
+    for x in convert:
+        dict = {
+            "url" : x.get("html_url"),
+            "author" : x.get("commit").get("author").get("name"),
+            "date" : x.get("commit").get("author").get("date"),
+            "message" : x.get("commit").get("message")
+        }
+        list.append(dict)
+    # return JsonResponse(list)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+   
 
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
@@ -159,6 +188,7 @@ def first_crawler(commits, space_key):
             query_date=day
         )
         git_data.save()
+
 
 
 def get_metrics(relation):
