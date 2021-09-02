@@ -511,12 +511,9 @@ def setGithubJiraUrl(request):
             RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except Exception as e:
-        print(e)
-        resp = {'code': -1, 'msg': 'error'}
+        resp = init_http_response_withoutdata(
+            RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")
-        # resp = init_http_response_withoutdata(
-        #     RespCode.success.value.key, RespCode.success.value.msg)
-        # return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['GET'])
