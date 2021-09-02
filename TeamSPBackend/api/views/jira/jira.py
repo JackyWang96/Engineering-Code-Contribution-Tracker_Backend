@@ -481,7 +481,9 @@ def setGithubJiraUrl(request):
         coordinator_id = request.session.get('coordinator_id')
         logger = logging.getLogger('django')
         logger.info(coordinator_id)
+        logger.info(request.body)
         data = json.loads(request.body)
+        print(data)
         space_key = data.get("space_key")
         logger.info(space_key)
         git_url = data.get("git_url")
@@ -508,7 +510,7 @@ def setGithubJiraUrl(request):
         resp = init_http_response_withoutdata(
             RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")
-    except Exception:
+    except Exception as e:
         resp = init_http_response_withoutdata(
             RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")

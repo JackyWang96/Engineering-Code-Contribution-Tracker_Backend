@@ -51,10 +51,12 @@ def construct_certification(repo, space_key):
         git_username__isnull=True, git_password__isnull=True)
     if len(user_info) == 0:
         return -1  # -1 means there is no user data
+    print(user_info)
     username = user_info[0].git_username  # 'chengzsh3'
     password = user_info[0].git_password  # 'Czs0707+'
     if len(username) == 0 or len(password) == 0:
         return -2  # -2 means there doesn't exist git username and pwd
+    print(repo[0:8])
     return repo[0:8] + username + ':' + password + '@' + repo[8:]
 
 
