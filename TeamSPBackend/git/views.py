@@ -13,7 +13,8 @@ from TeamSPBackend.common.choices import RespCode
 from TeamSPBackend.common.utils import make_json_response, check_user_login, body_extract, check_body, \
     init_http_response_my_enum
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
-import time, datetime
+import time
+import datetime
 from TeamSPBackend.common.utils import transformTimestamp
 import requests
 import json
@@ -22,26 +23,31 @@ from django.http import JsonResponse, HttpResponse
 
 baseUrl = 'https://api.github.com/'
 
+
 def getCommits(request, *args, **kwargs):
     json_body = json.loads(request.body)
-    token = json_body.get("token")
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=coordinator_id, space_key=space_key).git_token
     owner = json_body.get("owner")
     repo = json_body.get("repo")
     url = baseUrl + "repos/" + owner + "/" + repo + "/commits"
-    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
+    content = requests.get(
+        url=url, headers={'Authorization': 'Bearer ' + token})
     convert = json.loads(content.text)
     list = []
     for x in convert:
         dict = {
-            "url" : x.get("html_url"),
-            "author" : x.get("commit").get("author").get("name"),
-            "date" : x.get("commit").get("author").get("date"),
-            "message" : x.get("commit").get("message")
+            "url": x.get("html_url"),
+            "author": x.get("commit").get("author").get("name"),
+            "date": x.get("commit").get("author").get("date"),
+            "message": x.get("commit").get("message")
         }
         list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
-   
+
 
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
@@ -80,7 +86,8 @@ def update_individual_commits():
             if StudentCommitCounts.objects.filter(student_name=str(key)).exists():
                 user = StudentCommitCounts.objects.get(student_name=str(key))
                 if str(value) != user.commit_counts:
-                    StudentCommitCounts.objects.filter(student_name=str(key)).update(commit_counts=str(value))
+                    StudentCommitCounts.objects.filter(
+                        student_name=str(key)).update(commit_counts=str(value))
             else:
                 user = StudentCommitCounts(student_name=str(key), commit_counts=str(value),
                                            space_key=relation.space_key)
@@ -103,7 +110,8 @@ def auto_update_commits(space_key):
     if space_key is not None:
         if not GitCommitCounts.objects.filter(space_key=space_key).exists():
             if ProjectCoordinatorRelation.objects.filter(space_key=space_key).exclude(git_url__isnull=True).exists():
-                relation = ProjectCoordinatorRelation.objects.filter(space_key=space_key).exclude(git_url__isnull=True)[0]
+                relation = ProjectCoordinatorRelation.objects.filter(
+                    space_key=space_key).exclude(git_url__isnull=True)[0]
                 git_dto = construct_url(relation)
                 if not git_dto.valid_url:
                     return
@@ -188,7 +196,6 @@ def first_crawler(commits, space_key):
             query_date=day
         )
         git_data.save()
-
 
 
 def get_metrics(relation):

@@ -20,4 +20,9 @@ class Migration(migrations.Migration):
             name='git_username',
             field=models.CharField(default='', max_length=256),
         ),
+        migrations.AddField(
+            model_name='projectcoordinatorrelation',
+            name='git_token',
+            field=models.CharField(default='', max_length=256),
+        ),
     ]
