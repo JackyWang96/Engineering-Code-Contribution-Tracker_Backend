@@ -72,6 +72,37 @@ def listContribution(request, *args, **kwargs):
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
+def getLastCommit(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=coordinator_id, space_key=space_key).git_token
+    owner = json_body.get("owner")
+    repo = json_body.get("repo")
+    users = json_body.get("contributor")
+    list = []
+    for x in users:
+        name = x.get("name")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?author=" + name
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        # in some case the user changed their user name, this api will get a empty string
+        # print(content.text=="[]")
+        if content.text == "[]":
+            continue
+        convert = json.loads(content.text)[0]
+        dict = {
+            "url": convert.get("html_url"),
+            "author": convert.get("commit").get("author").get("name"),
+            "date": convert.get("commit").get("author").get("date"),
+            "message": convert.get("commit").get("message")
+        }
+        list.append(dict)
+    # return JsonResponse(list)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
         data = {
