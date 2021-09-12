@@ -18,6 +18,8 @@ from TeamSPBackend.common.utils import transformTimestamp
 import requests
 import json
 from django.http import JsonResponse, HttpResponse
+from github import Github
+
 
 
 baseUrl = 'https://api.github.com/'
@@ -27,21 +29,79 @@ def getCommits(request, *args, **kwargs):
     token = json_body.get("token")
     owner = json_body.get("owner")
     repo = json_body.get("repo")
-    url = baseUrl + "repos/" + owner + "/" + repo + "/commits"
+    url = baseUrl + "repos/" + owner + "/" + repo + "/commits" 
     content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
     convert = json.loads(content.text)
     list = []
+    print(convert) 
     for x in convert:
         dict = {
             "url" : x.get("html_url"),
             "author" : x.get("commit").get("author").get("name"),
             "date" : x.get("commit").get("author").get("date"),
-            "message" : x.get("commit").get("message")
+            "message" : x.get("commit").get("message"),
+            "sha": x.get("sha"),
+
+            "comments_url": x.get("comments_url"),
+            "stats": x.get("stats")
+            
         }
         list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
+
+# changes in one commits
+def getUpdates(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    token = json_body.get("token")
+    owner = json_body.get("owner")
+    repo = json_body.get("repo")
+    sha = json_body.get("sha")
+    
+    url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha 
+    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
+    
+    
+    convert = json.loads(content.text)
+    files = convert.get("files")
+    list = []
    
+    print (content)
+    print(convert) 
+    
+    
+    total = {
+         "sha" : convert.get("sha"),
+         "total": convert.get("stats").get("total"),
+         "additions": convert.get("stats").get("additions"),
+         "deletions": convert.get("stats").get("deletions"),
+        
+        # for x in convert:
+        #  "filesChanges"= {
+        #  "filesname":    convert.get("files").get("filesname"),
+        #  "filesChanges" : convert.get("files").get("filesChanges"),
+        #  "filesadditions" : convert.get("files").get("filesadditions"),
+        #   "filesdeletions" : convert.get("files").get("filesdeletions")
+
+        #  }
+     }  
+    list.append(total)
+     
+    for x in files :
+        dict = {
+            "filename" : x.get("filename"),
+            "addition" : x.get("additions"),
+        }
+        list.append(dict)
+
+            
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
+    
+
+
+
 
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
