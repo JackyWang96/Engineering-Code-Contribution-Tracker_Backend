@@ -49,6 +49,29 @@ def getCommits(request, *args, **kwargs):
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
+def listContribution(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=coordinator_id, space_key=space_key).git_token
+    owner = json_body.get("owner")
+    repo = json_body.get("repo")
+    url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
+    content = requests.get(
+        url=url, headers={'Authorization': 'Bearer ' + token})
+    convert = json.loads(content.text)
+    list = []
+    for x in convert:
+        dict = {
+            "commits": x.get("total"),
+            "author": x.get("author").get("login"),
+        }
+        list.append(dict)
+    # return JsonResponse(list)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
         data = {
