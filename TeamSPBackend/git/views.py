@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -19,34 +19,74 @@ from TeamSPBackend.common.utils import transformTimestamp
 import requests
 import json
 from django.http import JsonResponse, HttpResponse
+from rest_framework import generics
+from .serializers import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
 baseUrl = 'https://api.github.com/'
 
 
-def getCommits(request, *args, **kwargs):
-    json_body = json.loads(request.body)
-    coordinator_id = request.session.get('coordinator_id')
-    space_key = json_body.get("space_key")
-    token = ProjectCoordinatorRelation.objects.get(
-        coordinator_id=coordinator_id, space_key=space_key).git_token
-    owner = json_body.get("owner")
-    repo = json_body.get("repo")
-    url = baseUrl + "repos/" + owner + "/" + repo + "/commits"
-    content = requests.get(
-        url=url, headers={'Authorization': 'Bearer ' + token})
-    convert = json.loads(content.text)
-    list = []
-    for x in convert:
-        dict = {
-            "url": x.get("html_url"),
-            "author": x.get("commit").get("author").get("name"),
-            "date": x.get("commit").get("author").get("date"),
-            "message": x.get("commit").get("message")
-        }
-        list.append(dict)
-    # return JsonResponse(list)
-    return HttpResponse(json.dumps(list), content_type="application/json")
+class GetCommits(generics.ListAPIView):
+    """
+    Retrieve data from Resort table, depending on the Param of country_id in the request.
+    Possible used in: provider sign up step 2
+    """
+    serializer_class = CommitSerializer
+
+    def get_queryset(self):
+        space_key = self.kwargs['space_key']
+        return GitCommit.objects.filter(space_key=space_key)
+
+
+def updateCommits(request, *args, **kwargs):
+    try:
+        json_body = json.loads(request.body)
+        coordinator_id = request.session.get('coordinator_id')
+        space_key = json_body.get("space_key")
+        token = ProjectCoordinatorRelation.objects.get(
+            coordinator_id=coordinator_id, space_key=space_key).git_token
+        owner = json_body.get("owner")
+        repo = json_body.get("repo")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=100"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        # list = []
+        for x in convert:
+            if GitCommit.objects.filter(sha=x.get("sha")).exists():
+                continue
+            commit = GitCommit.objects.create(
+                space_key=space_key,
+                sha=x.get("sha"),
+                url=x.get("html_url"),
+                username=x.get("author").get("login"),
+                date=x.get("commit").get("author").get("date"),
+                message=x.get("commit").get("message")
+            )
+            commit.save()
+    except Exception as e:
+        print(e)
+        resp = init_http_response_my_enum(RespCode.invalid_parameter)
+        return make_json_response(resp=resp)
+    resp = init_http_response_my_enum(RespCode.success)
+    return make_json_response(resp=resp)
+
+
+# def getCommits(request, *args, **kwargs):
+#     json_body = json.loads(request.body)
+#     space_key = json_body.get("space_key")
+#     record = GitCommit.objects.filter(space_key=space_key)
+#     # list = []
+#     # for x in record:
+#     #     dict = {
+#     #         "commits": x.get("total"),
+#     #         "author": x.get("author").get("login"),
+#     #     }
+#     #     list.append(dict)
+#     # return HttpResponse(json.dumps(list), content_type="application/json")
+#     return record
 
 
 def listContribution(request, *args, **kwargs):
