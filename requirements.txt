@@ -3,8 +3,8 @@ atlassian-python-api==1.16.1
 certifi==2020.4.5.1
 cffi==1.14.1
 chardet==3.0.4
-cryptography==3.0
-Django==3.0.6
+cryptography==3.2
+Django==3.1.12
 django-cors-headers==3.5.0
 idna==2.9
 mysqlclient==1.4.6
@@ -19,13 +19,13 @@ requests-oauthlib==1.3.0
 six==1.15.0
 sqlparse==0.3.1
 ujson==3.0.0
-urllib3==1.25.9
+urllib3==1.26.5
 xsmtplib==1.0.1.dev0
 atlassian-python-api==1.16.1
 jira-metrics-extract
 xsmtplib==1.0.1.dev0
 slackclient==2.8.2
-PyYAML~=5.3.1
+PyYAML~=5.4
 pyOpenSSL==20.0.1
 gitpython==3.1.9
 jira-agile-metrics==0.24
