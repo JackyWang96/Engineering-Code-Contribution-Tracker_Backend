@@ -507,6 +507,8 @@ def setGithubJiraUrl(request):
         logger.info(space_key)
         git_url = data.get("git_url")
         logger.info(git_url)
+        git_backend_url = data.get("git_backend_url")
+        logger.info(git_backend_url)
         jira_url = data.get("jira_url")
         logger.info(jira_url)
         git_username = data.get("git_username")
@@ -519,6 +521,7 @@ def setGithubJiraUrl(request):
         existURLRecord = ProjectCoordinatorRelation.objects.get(
             coordinator_id=coordinator_id, space_key=space_key)
         existURLRecord.git_url = git_url
+        existURLRecord.git_backend_url = git_backend_url
         existURLRecord.jira_project = jira_url
         existURLRecord.git_username = git_username
         existURLRecord.git_password = git_password
