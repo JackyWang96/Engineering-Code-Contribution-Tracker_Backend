@@ -12,6 +12,10 @@ from TeamSPBackend.project.models import ProjectCoordinatorRelation
 logger = logging.getLogger('django')
 
 GITHUB = 'https://github.com/'
+
+# GIT_CLONE_COMMAND = 'git clone {} {}'
+GIT_CLONE_COMMAND = "git clone {} {}"
+
 # For Linux or Mac
 REPO_PATH = BASE_DIR + '/resource/repo/'
 COMMIT_DIR = BASE_DIR + '/resource/commit_log'
@@ -19,7 +23,7 @@ COMMIT_DIR = BASE_DIR + '/resource/commit_log'
 # REPO_PATH = BASE_DIR + '\\resource\\repo\\'
 # COMMIT_DIR = BASE_DIR + '\\resource\\commit_log'
 
-GIT_CLONE_COMMAND = 'git clone {} {}'
+
 GIT_CHECKOUT_COMMAND = 'git -C {} checkout {}'
 GIT_UPDATE_COMMAND = 'git -C {} pull origin HEAD'
 GIT_LOG_COMMAND = 'git -C {} log --pretty=format:%H%n%an%n%at%n%s --shortstat --no-merges'
@@ -33,10 +37,12 @@ GIT_LOG_PATH = ' --> {}'
 # For Mac
 # UND_PATH = '/Applications/Understand.app/Contents/MacOS/'
 # For Linux Server
+
 UND_PATH = '~/comp90082sp/understand/scitools/bin/linux64/'
 # For Windows, you may need to customise it for your Understand installation
 # Only customise path before \\SciTools\\bin\\pc-win64
 # UND_PATH = 'D:\\SciTools\\bin\\pc-win64'
+
 
 # set Understand License
 UND_LICENSE = 'und -setlicensecode XfA7YbMwUZ9OCYJd'
@@ -46,6 +52,7 @@ os.system(UND_LICENSE)
 UND_METRICS = UND_PATH + 'und create -db {} -languages python C++ Java add {} {} analyze'
 
 # Using Python API for get metrics
+
 # For Linux or Mac
 GET_METRICS_PY_PATH = os.path.dirname(
     os.path.abspath(__file__)) + '/get_und_metrics.py'
@@ -58,6 +65,7 @@ METRICS_FILE_PATH = BASE_DIR + '/resource/understand/'
 # GET_METRICS_PY = "D:\\SciTools\\bin\\pc-win64\\upython " + \
 #     GET_METRICS_PY_PATH + " {} {}"
 # METRICS_FILE_PATH = BASE_DIR + "\\resource\\understand\\"
+
 
 
 def construct_certification(repo, space_key):
@@ -83,10 +91,12 @@ def init_git():
 
 
 def convert(repo: str):
+
     # For Linux or Mac
     return '-'.join(repo.replace(GITHUB, '').split('/'))
     # For Windows
     # return '-'.join(repo.replace(GITHUB, '').split('/')).replace(":", "-")
+
 
 
 def check_path_exist(path):
@@ -111,8 +121,10 @@ def pull_repo(repo, space_key):
     if repo == -1 or repo == -2:
         return repo
     path = REPO_PATH + convert(repo)
+
     # Uncomment code below if you are on Windows
     # path = path.replace("\\", "/")
+
     if check_path_exist(path):
         git_update = GIT_UPDATE_COMMAND.format(path)
         logger.info('[GIT] Path: {} Executing: {}'.format(path, git_update))
@@ -227,8 +239,10 @@ def get_und_metrics(repo, space_key):
     # bug-fixed: keep the same with  pull_repo()
     repo = construct_certification(repo, space_key)
     path = REPO_PATH + convert(repo)
+
     # Uncomment code below if you are on Windows
     # path = path.replace("\\", "/")
+
     st_time = time.time()
     # Get .und , add files and analyze them
     und_metrics = UND_METRICS.format(und_file, path, und_file)
@@ -242,8 +256,10 @@ def get_und_metrics(repo, space_key):
         get_metrics_by_py))
     os.system(get_metrics_by_py)
 
+
     # Comment this line if you are on Windows
     metrics_file = METRICS_FILE_PATH + metrics_file
+
 
     with open(metrics_file, 'r') as fp:
         tmp_dict = json.load(fp)

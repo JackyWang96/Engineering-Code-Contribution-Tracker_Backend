@@ -40,15 +40,45 @@ class GetCommits(generics.ListAPIView):
         return GitCommit.objects.filter(space_key=space_key)
 
 
+def getToken(id, space_key):
+    token = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_token
+    return token
+
+
+def getOwnerRepo(id, space_key):
+    frontend = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_url.split("/")
+    backend = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_backend_url.split("/")
+    list = []
+    if len(backend) > 2:
+        back = {
+            "owner": backend[len(backend)-2],
+            "repo": backend[len(backend)-1],
+            "source": "backend"
+        }
+        list.append(back)
+    if len(frontend) > 2:
+        front = {
+            "owner": frontend[len(frontend)-2],
+            "repo": frontend[len(frontend)-1],
+            "source": "frontend"
+        }
+        list.append(front)
+    return list
+
+
 def updateCommits(request, *args, **kwargs):
-    try:
-        json_body = json.loads(request.body)
-        coordinator_id = request.session.get('coordinator_id')
-        space_key = json_body.get("space_key")
-        token = ProjectCoordinatorRelation.objects.get(
-            coordinator_id=coordinator_id, space_key=space_key).git_token
-        owner = json_body.get("owner")
-        repo = json_body.get("repo")
+    # try:
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = getToken(coordinator_id, space_key)
+    record = getOwnerRepo(coordinator_id, space_key)
+    for item in record:
+        owner = item.get("owner")
+        repo = item.get("repo")
         url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=100"
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
@@ -57,19 +87,24 @@ def updateCommits(request, *args, **kwargs):
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
                 continue
+            print(x.get("commit").get("message"))
+            msg = x.get("commit").get("message")
+            if len(msg) > 500:
+                msg = msg[0:500]+"..."
             commit = GitCommit.objects.create(
                 space_key=space_key,
                 sha=x.get("sha"),
                 url=x.get("html_url"),
                 username=x.get("author").get("login"),
                 date=x.get("commit").get("author").get("date"),
-                message=x.get("commit").get("message")
+                message=msg,
+                source=item.get("source")
             )
             commit.save()
-    except Exception as e:
-        print(e)
-        resp = init_http_response_my_enum(RespCode.invalid_parameter)
-        return make_json_response(resp=resp)
+    # except Exception as e:
+    #     print(e)
+    #     resp = init_http_response_my_enum(RespCode.invalid_parameter)
+    #     return make_json_response(resp=resp)
     resp = init_http_response_my_enum(RespCode.success)
     return make_json_response(resp=resp)
 
@@ -93,21 +128,23 @@ def listContribution(request, *args, **kwargs):
     json_body = json.loads(request.body)
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
-    token = ProjectCoordinatorRelation.objects.get(
-        coordinator_id=coordinator_id, space_key=space_key).git_token
-    owner = json_body.get("owner")
-    repo = json_body.get("repo")
-    url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
-    content = requests.get(
-        url=url, headers={'Authorization': 'Bearer ' + token})
-    convert = json.loads(content.text)
     list = []
-    for x in convert:
-        dict = {
-            "commits": x.get("total"),
-            "author": x.get("author").get("login"),
-        }
-        list.append(dict)
+    token = getToken(coordinator_id, space_key)
+    record = getOwnerRepo(coordinator_id, space_key)
+    for item in record:
+        owner = item.get("owner")
+        repo = item.get("repo")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        for x in convert:
+            dict = {
+                "commits": x.get("total"),
+                "author": x.get("author").get("login"),
+                "source": item.get("source")
+            }
+            list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
@@ -116,17 +153,17 @@ def getLastCommit(request, *args, **kwargs):
     json_body = json.loads(request.body)
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
-    token = ProjectCoordinatorRelation.objects.get(
-        coordinator_id=coordinator_id, space_key=space_key).git_token
-    owner = json_body.get("owner")
-    repo = json_body.get("repo")
+    token = getToken(coordinator_id, space_key)
     users = json_body.get("contributor")
     list = []
     for x in users:
         name = x.get("name")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?author=" + name
+        url = GitCommit.objects.filter(
+            username=name, space_key=space_key)[0].url.split("/")
+        apiUrl = baseUrl + "repos/" + \
+            url[len(url)-4] + "/" + url[len(url)-3] + "/commits?author=" + name
         content = requests.get(
-            url=url, headers={'Authorization': 'Bearer ' + token})
+            url=apiUrl, headers={'Authorization': 'Bearer ' + token})
         # in some case the user changed their user name, this api will get a empty string
         # print(content.text=="[]")
         if content.text == "[]":
