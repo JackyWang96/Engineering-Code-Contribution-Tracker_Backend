@@ -28,16 +28,16 @@ from rest_framework.response import Response
 baseUrl = 'https://api.github.com/'
 
 
-class GetCommits(generics.ListAPIView):
-    """
-    Retrieve data from Resort table, depending on the Param of country_id in the request.
-    Possible used in: provider sign up step 2
-    """
-    serializer_class = CommitSerializer
+# class GetCommits(generics.ListAPIView):
+#     """
+#     Retrieve data from Resort table, depending on the Param of country_id in the request.
+#     Possible used in: provider sign up step 2
+#     """
+#     serializer_class = CommitSerializer
 
-    def get_queryset(self):
-        space_key = self.kwargs['space_key']
-        return GitCommit.objects.filter(space_key=space_key)
+#     def get_queryset(self):
+#         space_key = self.kwargs['space_key']
+#         return GitCommit.objects.filter(space_key=space_key)
 
 
 def getToken(id, space_key):
@@ -87,7 +87,6 @@ def updateCommits(request, *args, **kwargs):
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
                 continue
-            print(x.get("commit").get("message"))
             msg = x.get("commit").get("message")
             if len(msg) > 500:
                 msg = msg[0:500]+"..."
@@ -109,19 +108,22 @@ def updateCommits(request, *args, **kwargs):
     return make_json_response(resp=resp)
 
 
-# def getCommits(request, *args, **kwargs):
-#     json_body = json.loads(request.body)
-#     space_key = json_body.get("space_key")
-#     record = GitCommit.objects.filter(space_key=space_key)
-#     # list = []
-#     # for x in record:
-#     #     dict = {
-#     #         "commits": x.get("total"),
-#     #         "author": x.get("author").get("login"),
-#     #     }
-#     #     list.append(dict)
-#     # return HttpResponse(json.dumps(list), content_type="application/json")
-#     return record
+def getCommits(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    space_key = json_body.get("space_key")
+    record = GitCommit.objects.filter(space_key=space_key)
+    list = []
+    for x in record:
+        print("hello world")
+        dict = {
+            "date": x.date,
+            "author": x.username,
+            "url": x.url,
+            "message": x.message,
+            "source": x.source,
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
 
 
 def listContribution(request, *args, **kwargs):
