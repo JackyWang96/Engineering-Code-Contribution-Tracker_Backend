@@ -6,7 +6,7 @@ from requests.auth import HTTPBasicAuth
 from TeamSPBackend.common.choices import RespCode
 from django.views.decorators.http import require_http_methods
 from django.http.response import HttpResponse
-from TeamSPBackend.common.utils import init_http_response, check_login
+from TeamSPBackend.common.utils import init_http_response, check_login, make_json_response, init_http_response_my_enum
 from TeamSPBackend.confluence.models import UserList
 from TeamSPBackend.confluence.models import MeetingMinutes
 
@@ -15,6 +15,44 @@ from TeamSPBackend.project.models import ProjectCoordinatorRelation
 from TeamSPBackend.confluence.models import PageHistory
 from TeamSPBackend.coordinator.models import Coordinator
 from TeamSPBackend.api import config
+
+
+@require_http_methods(['POST'])
+def update_git_username(request):
+    """Get users github username
+    Method: post
+    """
+    json_body = json.loads(request.body)
+    id = json_body.get("user_id")
+    git_username = json_body.get("git_username")
+    try:
+        user = UserList.objects.get(user_id=id)
+        user.git_username = git_username
+        user.save()
+        resp = init_http_response_my_enum(RespCode.success)
+        return make_json_response(resp=resp)
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+@require_http_methods(['POST'])
+def update_jira_username(request):
+    """Get users github username
+    Method: post
+    """
+    json_body = json.loads(request.body)
+    id = json_body.get("user_id")
+    jira_username = json_body.get("jira_username")
+    try:
+        user = UserList.objects.get(user_id=id)
+        user.jira_username = jira_username
+        user.save()
+        resp = init_http_response_my_enum(RespCode.success)
+        return make_json_response(resp=resp)
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['GET'])
@@ -303,12 +341,15 @@ def get_spaces_by_key(request, key_word):
     try:
         confluence = log_into_confluence(username, password)
         spaces = confluence.get_all_spaces()
-        space_keys = [space['key'] for space in spaces if key_word.lower() in space['key'].lower()]
+        space_keys = [space['key']
+                      for space in spaces if key_word.lower() in space['key'].lower()]
         while len(spaces) > 0:
             spaces = confluence.get_all_spaces(start=len(spaces))
-            space_keys.extend([space['key'] for space in spaces if key_word.lower() in space['key'].lower()])
+            space_keys.extend(
+                [space['key'] for space in spaces if key_word.lower() in space['key'].lower()])
 
-        resp = init_http_response(RespCode.success.value.key, RespCode.success.value.msg)
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
         resp['data'] = space_keys
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except:
@@ -342,7 +383,7 @@ def get_user_list(request, space_key):
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
-      
+
 @require_http_methods(['GET'])
 @check_login()
 def get_meeting_minutes(request, space_key):
@@ -366,14 +407,14 @@ def get_meeting_minutes(request, space_key):
                 'link': meeting.meeting_link
             })
         resp = init_http_response(
-        RespCode.success.value.key, RespCode.success.value.msg)
+            RespCode.success.value.key, RespCode.success.value.msg)
         resp['data'] = data
-        return HttpResponse(json.dumps(resp), content_type="application/json")  
+        return HttpResponse(json.dumps(resp), content_type="application/json")
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
-      
+
 @require_http_methods(['GET'])
 @check_login()
 def get_page_count_by_time(request, space_key):
@@ -444,8 +485,10 @@ def delete_project(request, *args, **kwargs):
         # delete space key that is imported by the coordinator.
         space_key = json.loads(request.body)["space_key"]
         coordinator_id = request.session['coordinator_id']
-        ProjectCoordinatorRelation.objects.filter(coordinator_id=coordinator_id, space_key=space_key).delete()
-        resp = {'code': RespCode.success.value.key, 'msg': RespCode.success.value.msg}
+        ProjectCoordinatorRelation.objects.filter(
+            coordinator_id=coordinator_id, space_key=space_key).delete()
+        resp = {'code': RespCode.success.value.key,
+                'msg': RespCode.success.value.msg}
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except:
         resp = {'code': -1, 'msg': 'error'}
