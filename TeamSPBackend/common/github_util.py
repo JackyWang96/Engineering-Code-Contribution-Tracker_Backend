@@ -66,13 +66,11 @@ def construct_certification(repo, space_key):
         git_username__isnull=True, git_password__isnull=True)
     if len(user_info) == 0:
         return -1  # -1 means there is no user data
-    print(user_info)
     username = user_info[0].git_username  # 'chengzsh3'
     password = user_info[0].git_password  # 'Czs0707+'
     token = user_info[0].git_token
     if len(username) == 0 or len(password) == 0:
         return -2  # -2 means there doesn't exist git username and pwd
-    print(repo[0:8])
     return repo[0:8] + token + '@' + repo[8:]
     # return repo[0:8] + username + ':' + password + '@' + repo[8:]
 
@@ -111,7 +109,6 @@ def pull_repo(repo, space_key):
         return repo
     path = REPO_PATH + convert(repo)
     path = path.replace("\\", "/")
-    print('[path] ' + path)
     if check_path_exist(path):
         git_update = GIT_UPDATE_COMMAND.format(path)
         logger.info('[GIT] Path: {} Executing: {}'.format(path, git_update))
@@ -122,31 +119,6 @@ def pull_repo(repo, space_key):
     git_clone = GIT_CLONE_COMMAND.format(repo, path)
     logger.info('[GIT] Path: {} Executing: {}'.format(path, git_clone))
     os.system(git_clone)
-    return 1
-
-
-def pull_multi_repo(repo, backendRepo, space_key):
-    repo = construct_certification(repo, space_key)
-    backendRepo = construct_certification(backendRepo, space_key)
-    if repo == -1 or repo == -2:
-        return repo
-    path = REPO_PATH + convert(repo)
-    path = path.replace("\\", "/")
-    print('[path] ' + path)
-    if check_path_exist(path):
-        git_update = GIT_UPDATE_COMMAND.format(path)
-        logger.info('[GIT] Path: {} Executing: {}'.format(path, git_update))
-
-        os.system(git_update)
-        return 1  # 1 means valid
-    git_clone = GIT_CLONE_COMMAND.format(repo, path)
-    logger.info('[GIT] Path: {} Executing: {}'.format(path, git_clone))
-    os.system(git_clone)
-    if backendRepo != -1 and repo != -2:
-        git_clone = GIT_CLONE_COMMAND.format(backendRepo, path)
-        logger.info('[GIT] Path: {} Executing: {}'.format(
-            backendRepo, git_clone))
-        os.system(git_clone)
     return 1
 
 
@@ -242,8 +214,8 @@ def get_pull_request(repo, author=None, branch=None, after=None, before=None):
     return commits
 
 
-def get_und_metrics(repo, backendRepo, space_key):
-    state = pull_multi_repo(repo, backendRepo, space_key)
+def get_und_metrics(repo, space_key):
+    state = pull_repo(repo, space_key)
     if state == -1 or state == -2:
         return state
     und_file = convert(repo) + '.und'
@@ -252,7 +224,6 @@ def get_und_metrics(repo, backendRepo, space_key):
     repo = construct_certification(repo, space_key)
     path = REPO_PATH + convert(repo)
     path = path.replace("\\", "/")
-    print("[path in 226] " + path)
     st_time = time.time()
     # Get .und , add files and analyze them
     und_metrics = UND_METRICS.format(und_file, path, und_file)
@@ -268,7 +239,6 @@ def get_und_metrics(repo, backendRepo, space_key):
     os.system(get_metrics_by_py)
 
     # metrics_file = METRICS_FILE_PATH + metrics_file
-    print("metric path: " + metrics_file)
     with open(metrics_file, 'r') as fp:
         tmp_dict = json.load(fp)
     metrics = tmp_dict

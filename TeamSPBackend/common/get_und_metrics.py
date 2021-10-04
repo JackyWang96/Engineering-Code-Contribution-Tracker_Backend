@@ -37,24 +37,22 @@ if __name__ == '__main__':
     # open a project und
     udb = understand.open(und_file)
     list = []
+    metrics = udb.metric(udb.metrics())
+    list.append(metrics)
     for file in udb.ents("File"):
         name = file.longname()
+        index = name.find("@github.com")
         if UND_FILE_PATH not in name:
             continue
         metric = file.metric(file.metrics())
         if metric:
             dict = {
-                "filename": name,
+                "filename": name[index+12:],
                 # "lala": metrics_file
                 "attribute": metric
             }
             list.append(dict)
-        # metrics = udb.metric(udb.metrics())
-        # for k, v in sorted(metrics.items()):
-        #     list.append(k, "=", v)
-        # print (k,"=",v)
     # get all project metrics
-    metrics = udb.metric(udb.metrics())
     # write the metrics result to metrics_file (.json)
     with open(metrics_file, 'w') as fp:
         json.dump(list, fp, indent=4)
