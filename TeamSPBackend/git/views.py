@@ -78,6 +78,25 @@ def getOwnerRepo(id, space_key):
     return list
 
 
+def getFileMetrics(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    space_key = json_body.get("space_key")
+    fileMetrics = FileMetrics.objects.filter(space_key=space_key)
+    list = []
+    for x in fileMetrics:
+        dict = {
+            "space_key": space_key,
+            "source": x.source,
+            "file_name": x.file_name,
+            "code_lines_count": x.code_lines_count,
+            "blank_lines_count": x.blank_lines_count,
+            "comment_lines_count": x.comment_lines_count,
+            "comment_to_code_ratio": x.comment_to_code_ratio,
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
 def updateCommits(request, *args, **kwargs):
     # try:
     json_body = json.loads(request.body)
