@@ -27,7 +27,8 @@ def import_project(request, *args, **kwargs):
         # get coordinator_id based on coordinator_name
         coordinator_id = request.session['coordinator_id']
         if len(ProjectCoordinatorRelation.objects.filter(coordinator_id=coordinator_id, space_key=space_key)) == 0:
-            relation = ProjectCoordinatorRelation(coordinator_id=coordinator_id, space_key=space_key)
+            relation = ProjectCoordinatorRelation(
+                coordinator_id=coordinator_id, space_key=space_key)
             relation.save()
             Timer(0, insert_space_user_list, args=(space_key,)).start()
             Timer(0, insert_space_page_history, args=(space_key,)).start()
@@ -35,7 +36,8 @@ def import_project(request, *args, **kwargs):
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
         logger = logging.getLogger('django')
-        logger.info("import project " + space_key + " takes " + str(time.time() - start) + "s")
+        logger.info("import project " + space_key +
+                    " takes " + str(time.time() - start) + "s")
 
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except Exception as e:
@@ -59,7 +61,8 @@ def login_sso(request, *args, **kwargs):
         password = json_body.get("password")
         if username == "admin" and password == "123":
             store_coordinator(username)
-            request.session['coordinator_id'] = Coordinator.objects.filter(coordinator_name=username)[0].id
+            request.session['coordinator_id'] = Coordinator.objects.filter(
+                coordinator_name=username)[0].id
             request.session['coordinator_name'] = username
             resp = init_http_response(
                 RespCode.success.value.key, RespCode.success.value.msg)
@@ -69,12 +72,13 @@ def login_sso(request, *args, **kwargs):
         res = requests.post(url=url, json=data)
         logger = logging.getLogger("django")
         logger.info(res.json())
-        if operator.eq(res.json().get("status"),"SUCCESS"):
+        if operator.eq(res.json().get("status"), "SUCCESS"):
             resp = init_http_response(
                 RespCode.success.value.key, RespCode.success.value.msg)
             store_coordinator(username)
             # put username into session
-            request.session['coordinator_id'] = Coordinator.objects.filter(coordinator_name=username)[0].id
+            request.session['coordinator_id'] = Coordinator.objects.filter(
+                coordinator_name=username)[0].id
             request.session['coordinator_name'] = username
         else:
             resp = {'code': -2, 'msg': 'authentication failed'}
