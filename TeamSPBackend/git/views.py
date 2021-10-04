@@ -48,7 +48,10 @@ def getToken(id, space_key):
 
 
 def getUserList(space_key):
-    username = UserList.objects.filter(space_key=space_key).git_username
+    user = UserList.objects.filter(space_key=space_key)
+    username = []
+    for item in user:
+        username.append(item.git_username)
     return username
 
 
@@ -83,10 +86,6 @@ def updateCommits(request, *args, **kwargs):
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
     username = getUserList(space_key)
-    print(username)
-    namelist = []
-    for item in username:
-        namelist.append(item)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
@@ -97,6 +96,8 @@ def updateCommits(request, *args, **kwargs):
         # list = []
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
+                continue
+            if x.get("author").get("login") not in username:
                 continue
             msg = x.get("commit").get("message")
             if len(msg) > 500:
@@ -125,7 +126,6 @@ def getCommits(request, *args, **kwargs):
     record = GitCommit.objects.filter(space_key=space_key)
     list = []
     for x in record:
-        print("hello world")
         dict = {
             "date": x.date,
             "author": x.username,
