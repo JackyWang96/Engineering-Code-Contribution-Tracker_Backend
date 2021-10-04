@@ -13,6 +13,7 @@ from TeamSPBackend.common.choices import RespCode
 from TeamSPBackend.common.utils import make_json_response, check_user_login, body_extract, check_body, \
     init_http_response_my_enum
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
+from TeamSPBackend.confluence.models import UserList
 import time
 import datetime
 from TeamSPBackend.common.utils import transformTimestamp
@@ -46,6 +47,11 @@ def getToken(id, space_key):
     return token
 
 
+def getUserList(space_key):
+    username = UserList.objects.filter(space_key=space_key).git_username
+    return username
+
+
 def getOwnerRepo(id, space_key):
     frontend = ProjectCoordinatorRelation.objects.get(
         coordinator_id=id, space_key=space_key).git_url.split("/")
@@ -76,6 +82,11 @@ def updateCommits(request, *args, **kwargs):
     space_key = json_body.get("space_key")
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
+    username = getUserList(space_key)
+    print(username)
+    namelist = []
+    for item in username:
+        namelist.append(item)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
@@ -335,16 +346,26 @@ def get_metrics(relation):
     data = {
         "url": relation.git_url
     }
+    backendData = {
+        "url": relation.git_backend_url
+    }
     # create GitDTO object
     git_dto = GitDTO()
+    git_backend_dto = GitDTO()
     # extract body information and store them in GitDTO.
     body_extract(data, git_dto)
+    body_extract(backendData, git_backend_dto)
     if not git_dto.valid_url:
         resp = init_http_response_my_enum(RespCode.no_repository)
         return make_json_response(resp=resp)
+    if not git_backend_dto.valid_url:
+        resp = init_http_response_my_enum(RespCode.no_repository)
+        return make_json_response(resp=resp)
     git_dto.url = git_dto.url.lstrip('$')
+    git_backend_dto.url = git_backend_dto.url.lstrip('$')
 
-    metrics = get_und_metrics(git_dto.url, relation.space_key)
+    metrics = get_und_metrics(
+        git_dto.url, git_backend_dto.url, relation.space_key)
     if metrics is None:
         resp = init_http_response_my_enum(RespCode.invalid_authentication)
         return make_json_response(resp=resp)
@@ -357,26 +378,29 @@ def get_metrics(relation):
 
     if GitMetrics.objects.filter(space_key=relation.space_key).exists():
         GitMetrics.objects.filter(space_key=relation.space_key).update(
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
+            # file_count=metrics['CountDeclFile'],
+            # class_count=metrics['CountDeclClass'],
+            # function_count=metrics['CountDeclFunction'],
+            # code_lines_count=metrics['CountLineCode'],
+            # declarative_lines_count=metrics['CountLineCodeDecl'],
+            # executable_lines_count=metrics['CountLineCodeExe'],
+            # comment_lines_count=metrics['CountLineComment'],
+            # comment_to_code_ratio=metrics['RatioCommentToCode'],
             code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
         )
     else:
         metrics_dto = GitMetrics(
             space_key=relation.space_key,
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
+            # file_count=metrics['CountDeclFile'],
+            # class_count=metrics['CountDeclClass'],
+            # function_count=metrics['CountDeclFunction'],
+            # code_lines_count=metrics['CountLineCode'],
+            # declarative_lines_count=metrics['CountLineCodeDecl'],
+            # executable_lines_count=metrics['CountLineCodeExe'],
+            # comment_lines_count=metrics['CountLineComment'],
+            # comment_to_code_ratio=metrics['RatioCommentToCode'],
             code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
+
         )
         metrics_dto.save()
 
