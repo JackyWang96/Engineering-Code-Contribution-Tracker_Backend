@@ -44,7 +44,10 @@ os.system(UND_LICENSE)
 
 # understand und command line for loading a git repo and generate metrics
 UND_METRICS = UND_PATH + \
-    'und create -db {} -languages python Web Language add {} {} analyze'
+    'und create -db {} -languages Web Language add {} {} analyze'
+
+UND_BACKEND_METRICS = UND_PATH + \
+    'und create -db {} -languages python add {} {} analyze'
 
 # Using Python API for get metrics
 # GET_METRICS_PY_PATH = os.path.dirname(
@@ -214,7 +217,7 @@ def get_pull_request(repo, author=None, branch=None, after=None, before=None):
     return commits
 
 
-def get_und_metrics(repo, space_key):
+def get_und_metrics(repo, space_key, source):
     state = pull_repo(repo, space_key)
     if state == -1 or state == -2:
         return state
@@ -226,7 +229,10 @@ def get_und_metrics(repo, space_key):
     path = path.replace("\\", "/")
     st_time = time.time()
     # Get .und , add files and analyze them
-    und_metrics = UND_METRICS.format(und_file, path, und_file)
+    if source == "frontend":
+        und_metrics = UND_METRICS.format(und_file, path, und_file)
+    elif source == "backend":
+        und_metrics = UND_BACKEND_METRICS.format(und_file, path, und_file)
     logger.info('[Understand] File {} Executing: {}'.format(
         und_file, und_metrics))
     os.system(und_metrics)
