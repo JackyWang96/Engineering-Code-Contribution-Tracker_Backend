@@ -381,7 +381,7 @@ def save_metrics(data, space_key, source):
         resp = init_http_response_my_enum(RespCode.no_repository)
         return make_json_response(resp=resp)
     git_dto.url = git_dto.url.lstrip('$')
-    metrics = get_und_metrics(git_dto.url, space_key)
+    metrics = get_und_metrics(git_dto.url, space_key, source)
     fileMetrics = sortTopTen(metrics[1:len(metrics)])
 
     if metrics is None:
@@ -397,19 +397,23 @@ def save_metrics(data, space_key, source):
     for file in fileMetrics:
         if FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).exists():
             FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).update(
-                code_lines_count=file["attribute"]['CountLineCode'],
-                blank_lines_count=file["attribute"]['CountLineBlank'],
-                comment_lines_count=file["attribute"]['CountLineComment'],
-                comment_to_code_ratio=file["attribute"]['RatioCommentToCode'],
+                code_lines_count=ifExist('CountLineCode', file["attribute"]),
+                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
+                comment_lines_count=ifExist(
+                    'CountLineComment', file["attribute"]),
+                comment_to_code_ratio=ifExist(
+                    'RatioCommentToCode', file["attribute"]),
             )
         else:
             metrics_dto = FileMetrics(
                 space_key=space_key,
                 file_name=file["filename"],
-                code_lines_count=file["attribute"]['CountLineCode'],
-                blank_lines_count=file["attribute"]['CountLineBlank'],
-                comment_lines_count=file["attribute"]['CountLineComment'],
-                comment_to_code_ratio=file["attribute"]['RatioCommentToCode'],
+                code_lines_count=ifExist('CountLineCode', file["attribute"]),
+                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
+                comment_lines_count=ifExist(
+                    'CountLineComment', file["attribute"]),
+                comment_to_code_ratio=ifExist(
+                    'RatioCommentToCode', file["attribute"]),
                 source=source
             )
             metrics_dto.save()
@@ -417,29 +421,36 @@ def save_metrics(data, space_key, source):
     metrics = metrics[0]
     if GitMetrics.objects.filter(space_key=space_key, source=source).exists():
         GitMetrics.objects.filter(space_key=space_key, source=source).update(
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
-            code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
+            file_count=ifExist('CountDeclFile', metrics),
+            class_count=ifExist('CountDeclClass', metrics),
+            function_count=ifExist('CountDeclFunction', metrics),
+            code_lines_count=ifExist('CountLineCode', metrics),
+            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
+            executable_lines_count=ifExist('CountLineCodeExe', metrics),
+            comment_lines_count=ifExist('CountLineComment', metrics),
+            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
         )
     else:
         metrics_dto = GitMetrics(
             space_key=space_key,
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
-            code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
+            file_count=ifExist('CountDeclFile', metrics),
+            class_count=ifExist('CountDeclClass', metrics),
+            function_count=ifExist('CountDeclFunction', metrics),
+            code_lines_count=ifExist('CountLineCode', metrics),
+            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
+            executable_lines_count=ifExist('CountLineCodeExe', metrics),
+            comment_lines_count=ifExist('CountLineComment', metrics),
+            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
             source=source
         )
         metrics_dto.save()
+
+
+def ifExist(str, metric):
+    if str in metric.keys():
+        return metric[str]
+    else:
+        return 0
 
 
 def takeCodeLine(dict):
