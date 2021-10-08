@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -13,40 +13,171 @@ from TeamSPBackend.common.choices import RespCode
 from TeamSPBackend.common.utils import make_json_response, check_user_login, body_extract, check_body, \
     init_http_response_my_enum
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
-import time, datetime
+from TeamSPBackend.confluence.models import UserList
+import time
+import datetime
 from TeamSPBackend.common.utils import transformTimestamp
 import requests
 import json
 from django.http import JsonResponse, HttpResponse
-from github import Github
-
+from rest_framework import generics
+from .serializers import *
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
 baseUrl = 'https://api.github.com/'
 
-def getCommits(request, *args, **kwargs):
-    json_body = json.loads(request.body)
-    token = json_body.get("token")
-    owner = json_body.get("owner")
-    repo = json_body.get("repo")
-    url = baseUrl + "repos/" + owner + "/" + repo + "/commits" 
-    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
-    convert = json.loads(content.text)
-    list = []
-    print(convert) 
-    for x in convert:
-        dict = {
-            "url" : x.get("html_url"),
-            "author" : x.get("commit").get("author").get("name"),
-            "date" : x.get("commit").get("author").get("date"),
-            "message" : x.get("commit").get("message"),
-            "sha": x.get("sha"),
 
-            "comments_url": x.get("comments_url"),
-            "stats": x.get("stats")
-            
+# class GetCommits(generics.ListAPIView):
+#     """
+#     Retrieve data from Resort table, depending on the Param of country_id in the request.
+#     Possible used in: provider sign up step 2
+#     """
+#     serializer_class = CommitSerializer
+
+#     def get_queryset(self):
+#         space_key = self.kwargs['space_key']
+#         return GitCommit.objects.filter(space_key=space_key)
+
+
+def getToken(id, space_key):
+    token = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_token
+    return token
+
+
+def getUserList(space_key):
+    user = UserList.objects.filter(space_key=space_key)
+    username = []
+    for item in user:
+        username.append(item.git_username)
+    return username
+
+
+def getOwnerRepo(id, space_key):
+    frontend = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_url.split("/")
+    backend = ProjectCoordinatorRelation.objects.get(
+        coordinator_id=id, space_key=space_key).git_backend_url.split("/")
+    list = []
+    if len(backend) > 2:
+        back = {
+            "owner": backend[len(backend)-2],
+            "repo": backend[len(backend)-1],
+            "source": "backend"
+        }
+        list.append(back)
+    if len(frontend) > 2:
+        front = {
+            "owner": frontend[len(frontend)-2],
+            "repo": frontend[len(frontend)-1],
+            "source": "frontend"
+        }
+        list.append(front)
+    return list
+
+
+def getFileMetrics(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    space_key = json_body.get("space_key")
+    fileMetrics = FileMetrics.objects.filter(space_key=space_key)
+    list = []
+    for x in fileMetrics:
+        dict = {
+            "space_key": space_key,
+            "source": x.source,
+            "file_name": x.file_name,
+            "code_lines_count": x.code_lines_count,
+            "blank_lines_count": x.blank_lines_count,
+            "comment_lines_count": x.comment_lines_count,
+            "comment_to_code_ratio": x.comment_to_code_ratio,
         }
         list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
+def updateCommits(request, *args, **kwargs):
+    # try:
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = getToken(coordinator_id, space_key)
+    record = getOwnerRepo(coordinator_id, space_key)
+    username = getUserList(space_key)
+    for item in record:
+        owner = item.get("owner")
+        repo = item.get("repo")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=100"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        # list = []
+        for x in convert:
+            if GitCommit.objects.filter(sha=x.get("sha")).exists():
+                continue
+            if x.get("author").get("login") not in username:
+                continue
+            msg = x.get("commit").get("message")
+            if len(msg) > 500:
+                msg = msg[0:500]+"..."
+            commit = GitCommit.objects.create(
+                space_key=space_key,
+                sha=x.get("sha"),
+                url=x.get("html_url"),
+                username=x.get("author").get("login"),
+                date=x.get("commit").get("author").get("date"),
+                message=msg,
+                source=item.get("source")
+            )
+            commit.save()
+    # except Exception as e:
+    #     print(e)
+    #     resp = init_http_response_my_enum(RespCode.invalid_parameter)
+    #     return make_json_response(resp=resp)
+    resp = init_http_response_my_enum(RespCode.success)
+    return make_json_response(resp=resp)
+
+
+def getCommits(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+
+    space_key = json_body.get("space_key")
+    record = GitCommit.objects.filter(space_key=space_key)
+    list = []
+    for x in record:
+        dict = {
+            "date": x.date,
+            "author": x.username,
+            "url": x.url,
+            "message": x.message,
+            "source": x.source,
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
+def listContribution(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    list = []
+    token = getToken(coordinator_id, space_key)
+    record = getOwnerRepo(coordinator_id, space_key)
+    for item in record:
+        owner = item.get("owner")
+        repo = item.get("repo")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        for x in convert:
+            dict = {
+                "commits": x.get("total"),
+                "author": x.get("author").get("login"),
+                "source": item.get("source")
+            }
+            list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
@@ -103,6 +234,37 @@ def getUpdates(request, *args, **kwargs):
 
 
 
+def getLastCommit(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    token = getToken(coordinator_id, space_key)
+    users = json_body.get("contributor")
+    list = []
+    for x in users:
+        name = x.get("name")
+        url = GitCommit.objects.filter(
+            username=name, space_key=space_key)[0].url.split("/")
+        apiUrl = baseUrl + "repos/" + \
+            url[len(url)-4] + "/" + url[len(url)-3] + "/commits?author=" + name
+        content = requests.get(
+            url=apiUrl, headers={'Authorization': 'Bearer ' + token})
+        # in some case the user changed their user name, this api will get a empty string
+        # print(content.text=="[]")
+        if content.text == "[]":
+            continue
+        convert = json.loads(content.text)[0]
+        dict = {
+            "url": convert.get("html_url"),
+            "author": convert.get("commit").get("author").get("name"),
+            "date": convert.get("commit").get("author").get("date"),
+            "message": convert.get("commit").get("message")
+        }
+        list.append(dict)
+    # return JsonResponse(list)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
 def update_individual_commits():
     for relation in ProjectCoordinatorRelation.objects.all():
         data = {
@@ -140,7 +302,8 @@ def update_individual_commits():
             if StudentCommitCounts.objects.filter(student_name=str(key)).exists():
                 user = StudentCommitCounts.objects.get(student_name=str(key))
                 if str(value) != user.commit_counts:
-                    StudentCommitCounts.objects.filter(student_name=str(key)).update(commit_counts=str(value))
+                    StudentCommitCounts.objects.filter(
+                        student_name=str(key)).update(commit_counts=str(value))
             else:
                 user = StudentCommitCounts(student_name=str(key), commit_counts=str(value),
                                            space_key=relation.space_key)
@@ -163,7 +326,8 @@ def auto_update_commits(space_key):
     if space_key is not None:
         if not GitCommitCounts.objects.filter(space_key=space_key).exists():
             if ProjectCoordinatorRelation.objects.filter(space_key=space_key).exclude(git_url__isnull=True).exists():
-                relation = ProjectCoordinatorRelation.objects.filter(space_key=space_key).exclude(git_url__isnull=True)[0]
+                relation = ProjectCoordinatorRelation.objects.filter(
+                    space_key=space_key).exclude(git_url__isnull=True)[0]
                 git_dto = construct_url(relation)
                 if not git_dto.valid_url:
                     return
@@ -250,11 +414,18 @@ def first_crawler(commits, space_key):
         git_data.save()
 
 
-
 def get_metrics(relation):
     data = {
         "url": relation.git_url
     }
+    backendData = {
+        "url": relation.git_backend_url
+    }
+    save_metrics(data, relation.space_key, "frontend")
+    save_metrics(backendData, relation.space_key, "backend")
+
+
+def save_metrics(data, space_key, source):
     # create GitDTO object
     git_dto = GitDTO()
     # extract body information and store them in GitDTO.
@@ -263,8 +434,9 @@ def get_metrics(relation):
         resp = init_http_response_my_enum(RespCode.no_repository)
         return make_json_response(resp=resp)
     git_dto.url = git_dto.url.lstrip('$')
+    metrics = get_und_metrics(git_dto.url, space_key, source)
+    fileMetrics = sortTopTen(metrics[1:len(metrics)])
 
-    metrics = get_und_metrics(git_dto.url, relation.space_key)
     if metrics is None:
         resp = init_http_response_my_enum(RespCode.invalid_authentication)
         return make_json_response(resp=resp)
@@ -275,30 +447,75 @@ def get_metrics(relation):
         resp = init_http_response_my_enum(RespCode.git_config_not_found)
         return make_json_response(resp=resp)
 
-    if GitMetrics.objects.filter(space_key=relation.space_key).exists():
-        GitMetrics.objects.filter(space_key=relation.space_key).update(
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
-            code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
+    for file in fileMetrics:
+        if FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).exists():
+            FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).update(
+                code_lines_count=ifExist('CountLineCode', file["attribute"]),
+                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
+                comment_lines_count=ifExist(
+                    'CountLineComment', file["attribute"]),
+                comment_to_code_ratio=ifExist(
+                    'RatioCommentToCode', file["attribute"]),
+            )
+        else:
+            metrics_dto = FileMetrics(
+                space_key=space_key,
+                file_name=file["filename"],
+                code_lines_count=ifExist('CountLineCode', file["attribute"]),
+                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
+                comment_lines_count=ifExist(
+                    'CountLineComment', file["attribute"]),
+                comment_to_code_ratio=ifExist(
+                    'RatioCommentToCode', file["attribute"]),
+                source=source
+            )
+            metrics_dto.save()
+
+    metrics = metrics[0]
+    if GitMetrics.objects.filter(space_key=space_key, source=source).exists():
+        GitMetrics.objects.filter(space_key=space_key, source=source).update(
+            file_count=ifExist('CountDeclFile', metrics),
+            class_count=ifExist('CountDeclClass', metrics),
+            function_count=ifExist('CountDeclFunction', metrics),
+            code_lines_count=ifExist('CountLineCode', metrics),
+            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
+            executable_lines_count=ifExist('CountLineCodeExe', metrics),
+            comment_lines_count=ifExist('CountLineComment', metrics),
+            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
         )
     else:
         metrics_dto = GitMetrics(
-            space_key=relation.space_key,
-            file_count=metrics['CountDeclFile'],
-            class_count=metrics['CountDeclClass'],
-            function_count=metrics['CountDeclFunction'],
-            code_lines_count=metrics['CountLineCode'],
-            declarative_lines_count=metrics['CountLineCodeDecl'],
-            executable_lines_count=metrics['CountLineCodeExe'],
-            comment_lines_count=metrics['CountLineComment'],
-            comment_to_code_ratio=metrics['RatioCommentToCode'],
+            space_key=space_key,
+            file_count=ifExist('CountDeclFile', metrics),
+            class_count=ifExist('CountDeclClass', metrics),
+            function_count=ifExist('CountDeclFunction', metrics),
+            code_lines_count=ifExist('CountLineCode', metrics),
+            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
+            executable_lines_count=ifExist('CountLineCodeExe', metrics),
+            comment_lines_count=ifExist('CountLineComment', metrics),
+            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
+            source=source
         )
         metrics_dto.save()
+
+
+def ifExist(str, metric):
+    if str in metric.keys():
+        return metric[str]
+    else:
+        return 0
+
+
+def takeCodeLine(dict):
+    return dict.get("attribute").get("CountLineCode")
+
+
+def sortTopTen(metrics):
+    if len(metrics) < 10:
+        return metrics
+    else:
+        metrics.sort(key=takeCodeLine, reverse=True)
+        return metrics[0:10]
 
 
 def auto_update_metrics():

@@ -3,3 +3,4 @@ __pycache__/
 TeamSPBackend/settings/dev.py
 TeamSPBackend/settings/prod.py
 requirements.txt
+chain.pem

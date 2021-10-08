@@ -1,0 +1,10 @@
+to test backend api, curl command line tools need to be installed, 
+refer to https://stackoverflow.com/questions/9507353/how-do-i-install-and-use-curl-on-windows to learn how to install curl on your pc.
+
+here are some curl commands to test api:
+
+curl -X POST -d "{""username"":""admin"", ""password"": ""123""}" http://127.0.0.1:8000/api/v1/sso/login
+curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/updateCommits
+curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/getCommits
+curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/listContribution
+curl -X POST -d "{""space_key"":""COMP900822021SM2SP"", ""contributor"": [""name"":""wxxu1"",""name"":""pete965""]}" http://127.0.0.1:8000/api/v1/sso/login

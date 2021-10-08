@@ -70,10 +70,12 @@ def get_project_key(project, jira):
 def get_done_contributor_names(team, jira):
     """Get contributors (name, displayName) list of a project"""
     data = []
-    total = jira.jql('project = "' + team + '" AND Status = Done', limit=0)['total']  # get total issue count
+    total = jira.jql('project = "' + team + '" AND Status = Done',
+                     limit=0)['total']  # get total issue count
     for i in range(ceil(total / 100)):  # recurring query if count > 100
         start = 0 + i * 100
-        data.append(jira.jql('project = ' + team + ' AND Status = Done', start=start, limit=100)['issues'])
+        data.append(jira.jql('project = ' + team +
+                    ' AND Status = Done', start=start, limit=100)['issues'])
     data = [issue for data_slice in data for issue in data_slice]  # flatten
     name_lst = []
     display_name_lst = []
@@ -117,10 +119,11 @@ def key_extracter(d):
         return s
     return {k: url_to_key(v) for k, v in d.items()}
 
+
 def key_extracter2(s):
     url_re = re.compile(
         '((http|https)\:\/\/)?[a-zA-Z0-9\.\/\?\:@\-_=#]+\.([a-zA-Z]){2,6}([a-zA-Z0-9\.\&\/\?\:@\-_=#])*')
-    if re.match(url_re,s):
+    if re.match(url_re, s):
         if s[-1] == '/':
             s = s.rsplit('/', 3)[1].lower()
             s = s.split('?')[0]
@@ -137,8 +140,10 @@ def get_issues_individual(request, team, student):
     try:
         jira = jira_login(request)
 
-        total = jira.jql('assignee = ' + student + ' AND project = ' + team)['total']
-        todo = jira.jql('assignee = ' + student + ' AND project = ' + team + ' AND status = "To Do"')['total']
+        total = jira.jql('assignee = ' + student +
+                         ' AND project = ' + team)['total']
+        todo = jira.jql('assignee = ' + student + ' AND project = ' +
+                        team + ' AND status = "To Do"')['total']
         in_progress = jira.jql('assignee = ' + student + ' AND project = '
                                + team + ' AND status = "In Progress"')['total']
         done = jira.jql('assignee = ' + student + ' AND project = '
@@ -173,10 +178,13 @@ def get_issues_team(request, team):
 
         total = jira.jql('project = ' + team)['total']
         todo = jira.jql('project = ' + team + ' AND status = "To Do"')['total']
-        in_progress = jira.jql('project = ' + team + ' AND status = "In Progress"')['total']
+        in_progress = jira.jql('project = ' + team +
+                               ' AND status = "In Progress"')['total']
         done = jira.jql('project = ' + team + ' AND status = "Done"')['total']
-        in_review = jira.jql('project = ' + team + ' AND status = "In Review"')['total']
-        review = jira.jql('project = ' + team + ' AND status = "Review"')['total']
+        in_review = jira.jql('project = ' + team +
+                             ' AND status = "In Review"')['total']
+        review = jira.jql('project = ' + team +
+                          ' AND status = "Review"')['total']
         data = {
             'count_issues_total': total,
             'count_issues_to_do': todo,
@@ -200,7 +208,8 @@ def get_comment_count_individual(request, team, student):
     try:
         jira = jira_login(request)
 
-        issues = json.dumps(jira.get_all_project_issues(team, fields='comment'))
+        issues = json.dumps(
+            jira.get_all_project_issues(team, fields='comment'))
         count = issues.count(student)
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
@@ -322,9 +331,12 @@ def auto_get_ticket_count_team_timestamped(request):
                     if not JiraCountByTime.objects.filter(space_key=team, time=round(to_unix_time(datetime_truncate(
                             parser.parse(row['Time']))))).exists():
                         jira_obj = JiraCountByTime(space_key=team,
-                                                   time=round(to_unix_time(datetime_truncate(parser.parse(row['Time'])))),
-                                                   to_do=int(float(row['To Do'])),
-                                                   in_progress=int(float(row['In Progress'])),
+                                                   time=round(to_unix_time(
+                                                       datetime_truncate(parser.parse(row['Time'])))),
+                                                   to_do=int(
+                                                       float(row['To Do'])),
+                                                   in_progress=int(
+                                                       float(row['In Progress'])),
                                                    done=int(float(row['Done'])))
                         jira_obj.save()
             os.remove('TeamSPBackend/api/views/jira/cfd_modified.csv')
@@ -359,9 +371,11 @@ def update_ticket_count_team_timestamped(jira_url):
             if not JiraCountByTime.objects.filter(space_key=team, time=round(to_unix_time(datetime_truncate(
                     parser.parse(row['Time']))))).exists():
                 jira_obj = JiraCountByTime(space_key=team,
-                                           time=round(to_unix_time(datetime_truncate(parser.parse(row['Time'])))),
+                                           time=round(to_unix_time(
+                                               datetime_truncate(parser.parse(row['Time'])))),
                                            to_do=int(float(row['To Do'])),
-                                           in_progress=int(float(row['In Progress'])),
+                                           in_progress=int(
+                                               float(row['In Progress'])),
                                            done=int(float(row['Done'])))
                 jira_obj.save()
     os.remove('TeamSPBackend/api/views/jira/cfd_modified.csv')
@@ -380,7 +394,8 @@ def get_contributions(request, team):
     try:
         jira = jira_login(request)
 
-        students, names = get_done_contributor_names(get_project_key(team, jira), jira)
+        students, names = get_done_contributor_names(
+            get_project_key(team, jira), jira)
         team = get_project_key(team, jira)
         count = []
         for student in students:
@@ -395,9 +410,11 @@ def get_contributions(request, team):
                 'done_count': count
             })
             if IndividualContributions.objects.filter(space_key=team, student=name).exists():
-                IndividualContributions.objects.filter(space_key=team, student=name).update(done_count=count)
+                IndividualContributions.objects.filter(
+                    space_key=team, student=name).update(done_count=count)
             else:
-                jira_obj = IndividualContributions(space_key=team, student=name, done_count=count)
+                jira_obj = IndividualContributions(
+                    space_key=team, student=name, done_count=count)
                 jira_obj.save()
 
         resp = init_http_response(
@@ -428,9 +445,11 @@ def update_contributions(jira_url):
             'done_count': count
         })
         if IndividualContributions.objects.filter(space_key=team, student=name).exists():
-            IndividualContributions.objects.filter(space_key=team, student=name).update(done_count=count)
+            IndividualContributions.objects.filter(
+                space_key=team, student=name).update(done_count=count)
         else:
-            jira_obj = IndividualContributions(space_key=team, student=name, done_count=count)
+            jira_obj = IndividualContributions(
+                space_key=team, student=name, done_count=count)
             jira_obj.save()
 
     resp = init_http_response(
@@ -464,7 +483,8 @@ def get_contributions_from_db(request, team):
         url = key_extracter(existRecord[0])
         jira_url = url.get('jira_project')
 
-        allExistRecord = list(IndividualContributions.objects.filter(space_key=jira_url).values('student', 'done_count'))
+        allExistRecord = list(IndividualContributions.objects.filter(
+            space_key=jira_url).values('student', 'done_count'))
 
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
@@ -483,23 +503,29 @@ def setGithubJiraUrl(request):
         logger.info(coordinator_id)
         logger.info(request.body)
         data = json.loads(request.body)
-        print(data)
         space_key = data.get("space_key")
         logger.info(space_key)
         git_url = data.get("git_url")
         logger.info(git_url)
+        git_backend_url = data.get("git_backend_url")
+        logger.info(git_backend_url)
         jira_url = data.get("jira_url")
         logger.info(jira_url)
         git_username = data.get("git_username")
         logger.info(git_username)
         git_password = data.get("git_password")
         logger.info(git_password)
+        git_token = data.get("git_token")
+        logger.info(git_token)
 
-        existURLRecord = ProjectCoordinatorRelation.objects.get(coordinator_id=coordinator_id, space_key=space_key)
+        existURLRecord = ProjectCoordinatorRelation.objects.get(
+            coordinator_id=coordinator_id, space_key=space_key)
         existURLRecord.git_url = git_url
+        existURLRecord.git_backend_url = git_backend_url
         existURLRecord.jira_project = jira_url
         existURLRecord.git_username = git_username
         existURLRecord.git_password = git_password
+        existURLRecord.git_token = git_token
         existURLRecord.save()
 
         # auto_update_commits(space_key)  # after setting git config, try to update git_commit table at once
@@ -511,12 +537,9 @@ def setGithubJiraUrl(request):
             RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except Exception as e:
-        print(e)
-        resp = {'code': -1, 'msg': 'error'}
+        resp = init_http_response_withoutdata(
+            RespCode.success.value.key, RespCode.success.value.msg)
         return HttpResponse(json.dumps(resp), content_type="application/json")
-        # resp = init_http_response_withoutdata(
-        #     RespCode.success.value.key, RespCode.success.value.msg)
-        # return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['GET'])
@@ -542,12 +565,14 @@ def get_ticket_count_from_db(request, team):
 
 def get_all_url_from_db():
     allURL = []
-    allExistRecord = list(ProjectCoordinatorRelation.objects.values('jira_project').distinct())
+    allExistRecord = list(
+        ProjectCoordinatorRelation.objects.values('jira_project').distinct())
     for record in allExistRecord:
         url = key_extracter(record)
         jira_url = url.get('jira_project')
         allURL.append(jira_url)
     return allURL
+
 
 def get_url_from_db(jira_url):
     record = key_extracter2(jira_url)
@@ -556,10 +581,12 @@ def get_url_from_db(jira_url):
 
 def jira_analytics(username, password, team):
     """Only queries cfd with jira-agile-metrics"""
-    copyfile('TeamSPBackend/api/views/jira/cfd-template.yaml', 'TeamSPBackend/api/views/jira/cfd.yaml')
+    copyfile('TeamSPBackend/api/views/jira/cfd-template.yaml',
+             'TeamSPBackend/api/views/jira/cfd.yaml')
     with open('TeamSPBackend/api/views/jira/cfd.yaml', 'r') as file:
         data = file.read()
-        data = data.replace('jirainstance', 'https://jira.cis.unimelb.edu.au:8444')
+        data = data.replace(
+            'jirainstance', 'https://jira.cis.unimelb.edu.au:8444')
         data = data.replace('usernameplace', username)
         data = data.replace('passwordplace', password)
         data = data.replace('projectplace', team)
@@ -582,7 +609,6 @@ def jira_analytics(username, password, team):
                 outfile.write(line)
 
 
-
 if 'runserver' in sys.argv:
     from django.http import HttpRequest
 
@@ -591,4 +617,5 @@ if 'runserver' in sys.argv:
     request.build_absolute_uri
     request.META['SERVER_NAME'] = request.build_absolute_uri
     utils.start_schedule(auto_get_contributions, 60 * 60 * 24, request)
-    utils.start_schedule(auto_get_ticket_count_team_timestamped, 60 * 60 * 24, request)
+    utils.start_schedule(
+        auto_get_ticket_count_team_timestamped, 60 * 60 * 24, request)
