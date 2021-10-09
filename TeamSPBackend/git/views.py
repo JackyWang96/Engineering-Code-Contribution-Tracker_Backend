@@ -129,7 +129,7 @@ def doUpdate(coordinator_id, space_key):
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
                 continue
-            if x.get("author").get("login") not in username:
+            if x is None or x.get("author") is None or x.get("author").get("login") not in username:
                 continue
             msg = x.get("commit").get("message")
             if len(msg) > 500:
