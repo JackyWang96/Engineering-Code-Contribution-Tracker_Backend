@@ -196,31 +196,22 @@ def getUpdates(request, *args, **kwargs):
     convert = json.loads(content.text)
     files = convert.get("files")
     list = []
-   
-
-    total = {
-         "sha" : convert.get("sha"),
-         "total": convert.get("stats").get("total"),
-         "additions": convert.get("stats").get("additions"),
-         "deletions": convert.get("stats").get("deletions"),
-        
-        # for x in convert:
-        #  "filesChanges"= {
-        #  "filesname":    convert.get("files").get("filesname"),
-        #  "filesChanges" : convert.get("files").get("filesChanges"),
-        #  "filesadditions" : convert.get("files").get("filesadditions"),
-        #   "filesdeletions" : convert.get("files").get("filesdeletions")
-
-        #  }
-     }  
-    list.append(total)
-     
+    fileChange = []
     for x in files :
         dict = {
             "filename" : x.get("filename"),
             "addition" : x.get("additions"),
         }
-        list.append(dict)
+        fileChange.append(dict)
+
+    total = {
+        "sha" : convert.get("sha"),
+        "total": convert.get("stats").get("total"),
+        "additions": convert.get("stats").get("additions"),
+        "deletions": convert.get("stats").get("deletions"),
+        "file_change": fileChange
+    }  
+    list.append(total)
 
             
     return HttpResponse(json.dumps(list), content_type="application/json")
