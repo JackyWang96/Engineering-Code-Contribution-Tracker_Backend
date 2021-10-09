@@ -197,10 +197,7 @@ def getUpdates(request, *args, **kwargs):
     files = convert.get("files")
     list = []
    
-    print (content)
-    print(convert) 
-    
-    
+
     total = {
          "sha" : convert.get("sha"),
          "total": convert.get("stats").get("total"),
