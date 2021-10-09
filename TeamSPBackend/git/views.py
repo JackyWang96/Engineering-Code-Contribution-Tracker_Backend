@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 # Create your views here.
 from collections import defaultdict
+from TeamSPBackend.common import utils
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
@@ -98,10 +99,22 @@ def getFileMetrics(request, *args, **kwargs):
 
 
 def updateCommits(request, *args, **kwargs):
-    # try:
     json_body = json.loads(request.body)
-    coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
+    coordinator_id = request.session.get('coordinator_id')
+    doUpdate(coordinator_id, space_key)
+
+
+def autoUpdateCommits():
+    records = ProjectCoordinatorRelation.objects.all()
+    for record in records:
+        doUpdate(record.coordinator_id, record.space_key)
+
+
+def doUpdate(coordinator_id, space_key):
+    # try:
+    coordinator_id = coordinator_id
+    space_key = space_key
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
     username = getUserList(space_key)
@@ -472,4 +485,5 @@ def auto_update_metrics():
 
 utils.start_schedule(auto_update_commits, 60 * 60 * 24, None)
 utils.start_schedule(update_individual_commits, 60 * 60 * 24)
-# utils.start_schedule(auto_update_metrics, 60 * 60 * 24)
+utils.start_schedule(autoUpdateCommits, 60 * 60 * 24)
+utils.start_schedule(auto_update_metrics, 60 * 60 * 24)
