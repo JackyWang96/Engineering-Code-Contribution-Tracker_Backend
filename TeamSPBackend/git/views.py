@@ -154,6 +154,7 @@ def doUpdate(coordinator_id, space_key):
 
 def getCommits(request, *args, **kwargs):
     json_body = json.loads(request.body)
+
     space_key = json_body.get("space_key")
     record = GitCommit.objects.filter(space_key=space_key)
     list = []
@@ -192,6 +193,46 @@ def listContribution(request, *args, **kwargs):
             list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
+
+# changes in one commits
+def getUpdates(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    token = json_body.get("token")
+    owner = json_body.get("owner")
+    repo = json_body.get("repo")
+    sha = json_body.get("sha")
+    
+    url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha 
+    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
+    
+    
+    convert = json.loads(content.text)
+    files = convert.get("files")
+    list = []
+    fileChange = []
+    for x in files :
+        dict = {
+            "filename" : x.get("filename"),
+            "addition" : x.get("additions"),
+        }
+        fileChange.append(dict)
+
+    total = {
+        "sha" : convert.get("sha"),
+        "total": convert.get("stats").get("total"),
+        "additions": convert.get("stats").get("additions"),
+        "deletions": convert.get("stats").get("deletions"),
+        "file_change": fileChange
+    }  
+    list.append(total)
+
+            
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+
+    
+
+
 
 
 def getLastCommit(request, *args, **kwargs):
