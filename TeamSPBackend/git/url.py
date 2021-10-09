@@ -10,6 +10,6 @@ urlpatterns = [
     path('listContribution', listContribution),
     path('getLastCommit', getLastCommit),
     path('getFileMetrics', getFileMetrics),
-    path('getUpdates/',getUpdates),
+    path('getUpdates',getUpdates),
 ]
 
