@@ -208,6 +208,7 @@ def get_git_metrics(request, space_key):
             "CountDeclMethod": int(item.CountDeclMethod),
             "CountDeclMethodAll": int(item.CountDeclMethodAll),
             "CountLine": int(item.CountLine),
+            "CountDeclFile": int(item.CountDeclFile),
             "CountLineBlank": int(item.CountLineBlank),
             "CountLineCode": int(item.CountLineCode),
             "CountLineCodeDecl": int(item.CountLineCodeDecl),
