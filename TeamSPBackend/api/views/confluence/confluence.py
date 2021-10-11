@@ -406,7 +406,7 @@ def get_meeting_minutes(request, space_key):
                 'title': meeting.meeting_title,
                 'start': meeting.start_time,
                 'end': meeting.end_time,
-                'type': meeting.type,
+                'type': meeting.meeting_type,
                 'link': meeting.meeting_link
             })
         resp = init_http_response(
