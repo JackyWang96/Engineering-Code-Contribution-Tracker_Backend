@@ -4,9 +4,12 @@ from django.db import models
 # Create your models here.
 
 class MeetingMinutes(models.Model):
-    meeting_title = models.CharField(max_length=256)
-    meeting_link = models.TextField()
-    space_key = models.CharField(max_length=256)
+    space_key = models.CharField(max_length=256, null=False)
+    meeting_title = models.CharField(max_length=256, null=False)
+    start_time = models.CharField(max_length=256, null=False)
+    end_time = models.CharField(max_length=256, null=False)
+    meeting_type = models.CharField(max_length=256, null=False)
+    meeting_link = models.TextField(null=False)
 
     class Meta:
         db_table = 'meeting_minutes'

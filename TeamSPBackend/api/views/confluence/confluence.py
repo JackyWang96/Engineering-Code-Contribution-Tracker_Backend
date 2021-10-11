@@ -404,6 +404,9 @@ def get_meeting_minutes(request, space_key):
         for meeting in meeting_minutes:
             data.append({
                 'title': meeting.meeting_title,
+                'start': meeting.start_time,
+                'end': meeting.end_time,
+                'type': meeting.type,
                 'link': meeting.meeting_link
             })
         resp = init_http_response(
