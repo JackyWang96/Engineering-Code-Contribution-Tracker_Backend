@@ -129,7 +129,7 @@ def doUpdate(coordinator_id, space_key):
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
                 continue
-            if x.get("author").get("login") not in username:
+            if x is None or x.get("author") is None or x.get("author").get("login") not in username:
                 continue
             msg = x.get("commit").get("message")
             if len(msg) > 500:
@@ -451,22 +451,52 @@ def save_metrics(data, space_key, source):
     for file in fileMetrics:
         if FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).exists():
             FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).update(
-                code_lines_count=ifExist('CountLineCode', file["attribute"]),
-                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
-                comment_lines_count=ifExist(
+                CountDeclClass=ifExist('CountDeclClass', file["attribute"]),
+                CountDeclExecutableUnit=ifExist(
+                    'CountDeclExecutableUnit', file["attribute"]),
+                CountLine=ifExist('CountLine', file["attribute"]),
+                CountLineBlank=ifExist('CountLineBlank', file["attribute"]),
+                CountLineCode=ifExist('CountLineCode', file["attribute"]),
+                CountLineCodeDecl=ifExist(
+                    'CountLineCodeDecl', file["attribute"]),
+                CountLineCodeExe=ifExist(
+                    'CountLineCodeExe', file["attribute"]),
+                CountLineComment=ifExist(
                     'CountLineComment', file["attribute"]),
-                comment_to_code_ratio=ifExist(
+                CountPath=ifExist('CountPath', file["attribute"]),
+                CountStmt=ifExist('CountStmt', file["attribute"]),
+                CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+                CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+                Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+                Essential=ifExist('Essential', file["attribute"]),
+                MaxNesting=ifExist('MaxNesting', file["attribute"]),
+                RatioCommentToCode=ifExist(
                     'RatioCommentToCode', file["attribute"]),
             )
         else:
             metrics_dto = FileMetrics(
                 space_key=space_key,
                 file_name=file["filename"],
-                code_lines_count=ifExist('CountLineCode', file["attribute"]),
-                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
-                comment_lines_count=ifExist(
+                CountDeclClass=ifExist('CountDeclClass', file["attribute"]),
+                CountDeclExecutableUnit=ifExist(
+                    'CountDeclExecutableUnit', file["attribute"]),
+                CountLine=ifExist('CountLine', file["attribute"]),
+                CountLineBlank=ifExist('CountLineBlank', file["attribute"]),
+                CountLineCode=ifExist('CountLineCode', file["attribute"]),
+                CountLineCodeDecl=ifExist(
+                    'CountLineCodeDecl', file["attribute"]),
+                CountLineCodeExe=ifExist(
+                    'CountLineCodeExe', file["attribute"]),
+                CountLineComment=ifExist(
                     'CountLineComment', file["attribute"]),
-                comment_to_code_ratio=ifExist(
+                CountPath=ifExist('CountPath', file["attribute"]),
+                CountStmt=ifExist('CountStmt', file["attribute"]),
+                CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+                CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+                Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+                Essential=ifExist('Essential', file["attribute"]),
+                MaxNesting=ifExist('MaxNesting', file["attribute"]),
+                RatioCommentToCode=ifExist(
                     'RatioCommentToCode', file["attribute"]),
                 source=source
             )
@@ -475,26 +505,52 @@ def save_metrics(data, space_key, source):
     metrics = metrics[0]
     if GitMetrics.objects.filter(space_key=space_key, source=source).exists():
         GitMetrics.objects.filter(space_key=space_key, source=source).update(
-            file_count=ifExist('CountDeclFile', metrics),
-            class_count=ifExist('CountDeclClass', metrics),
-            function_count=ifExist('CountDeclFunction', metrics),
-            code_lines_count=ifExist('CountLineCode', metrics),
-            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
-            executable_lines_count=ifExist('CountLineCodeExe', metrics),
-            comment_lines_count=ifExist('CountLineComment', metrics),
-            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
+            CountDeclClass=ifExist('CountDeclClass', metrics),
+            CountDeclExecutableUnit=ifExist(
+                'CountDeclExecutableUnit', metrics),
+            CountDeclFunction=ifExist('CountDeclFunction', metrics),
+            CountDeclMethod=ifExist('CountDeclMethod', metrics),
+            CountDeclMethodAll=ifExist('CountDeclMethodAll', metrics),
+            CountLine=ifExist('CountLine', metrics),
+            CountLineBlank=ifExist('CountLineBlank', metrics),
+            CountLineCode=ifExist('CountLineCode', metrics),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
+            CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
+            CountLineComment=ifExist('CountLineComment', file["attribute"]),
+            CountPath=ifExist('CountPath', file["attribute"]),
+            CountStmt=ifExist('CountStmt', file["attribute"]),
+            CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+            CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+            Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+            Essential=ifExist('Essential', file["attribute"]),
+            MaxNesting=ifExist('MaxNesting', file["attribute"]),
+            RatioCommentToCode=ifExist(
+                'RatioCommentToCode', file["attribute"]),
         )
     else:
         metrics_dto = GitMetrics(
             space_key=space_key,
-            file_count=ifExist('CountDeclFile', metrics),
-            class_count=ifExist('CountDeclClass', metrics),
-            function_count=ifExist('CountDeclFunction', metrics),
-            code_lines_count=ifExist('CountLineCode', metrics),
-            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
-            executable_lines_count=ifExist('CountLineCodeExe', metrics),
-            comment_lines_count=ifExist('CountLineComment', metrics),
-            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
+            CountDeclClass=ifExist('CountDeclClass', metrics),
+            CountDeclExecutableUnit=ifExist(
+                'CountDeclExecutableUnit', metrics),
+            CountDeclFunction=ifExist('CountDeclFunction', metrics),
+            CountDeclMethod=ifExist('CountDeclMethod', metrics),
+            CountDeclMethodAll=ifExist('CountDeclMethodAll', metrics),
+            CountLine=ifExist('CountLine', metrics),
+            CountLineBlank=ifExist('CountLineBlank', metrics),
+            CountLineCode=ifExist('CountLineCode', metrics),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
+            CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
+            CountLineComment=ifExist('CountLineComment', file["attribute"]),
+            CountPath=ifExist('CountPath', file["attribute"]),
+            CountStmt=ifExist('CountStmt', file["attribute"]),
+            CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+            CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+            Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+            Essential=ifExist('Essential', file["attribute"]),
+            MaxNesting=ifExist('MaxNesting', file["attribute"]),
+            RatioCommentToCode=ifExist(
+                'RatioCommentToCode', file["attribute"]),
             source=source
         )
         metrics_dto.save()
