@@ -34,6 +34,7 @@ class GitMetrics(models.Model):
     CountDeclMethod = models.IntegerField(null=False)
     CountDeclMethodAll = models.IntegerField(null=False)
     CountLine = models.IntegerField(null=False)
+    CountDeclFile = models.IntegerField(null=False)
     CountLineBlank = models.IntegerField(null=False)
     CountLineCode = models.IntegerField(null=False)
     CountLineCodeDecl = models.IntegerField(null=False)
