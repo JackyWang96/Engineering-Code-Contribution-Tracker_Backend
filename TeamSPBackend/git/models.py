@@ -58,6 +58,7 @@ class FileMetrics(models.Model):
     source = models.CharField(max_length=256, null=False)
     file_name = models.CharField(max_length=256, null=False)
     CountDeclClass = models.IntegerField(null=False)
+    CountDeclFunction = models.IntegerField(null=False)
     CountDeclExecutableUnit = models.IntegerField(null=False)
     CountLine = models.IntegerField(null=False)
     CountLineBlank = models.IntegerField(null=False)

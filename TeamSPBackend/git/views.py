@@ -93,6 +93,7 @@ def getFileMetrics(request, *args, **kwargs):
             "CountDeclExecutableUnit": x.CountDeclExecutableUnit,
             "CountLine": x.CountLine,
             "CountLineBlank": x.CountLineBlank,
+            "CountDeclFunction": x.CountDeclFunction,
             "CountLineCode": x.CountLineCode,
             "CountLineCodeDecl": x.CountLineCodeDecl,
             "CountLineCodeExe": x.CountLineCodeExe,
@@ -471,6 +472,8 @@ def save_metrics(data, space_key, source):
                 CountLineCode=ifExist('CountLineCode', file["attribute"]),
                 CountLineCodeDecl=ifExist(
                     'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
                 CountLineCodeExe=ifExist(
                     'CountLineCodeExe', file["attribute"]),
                 CountLineComment=ifExist(
@@ -497,6 +500,8 @@ def save_metrics(data, space_key, source):
                 CountLineCode=ifExist('CountLineCode', file["attribute"]),
                 CountLineCodeDecl=ifExist(
                     'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
                 CountLineCodeExe=ifExist(
                     'CountLineCodeExe', file["attribute"]),
                 CountLineComment=ifExist(
