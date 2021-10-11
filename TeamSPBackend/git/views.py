@@ -89,10 +89,23 @@ def getFileMetrics(request, *args, **kwargs):
             "space_key": space_key,
             "source": x.source,
             "file_name": x.file_name,
-            "code_lines_count": x.code_lines_count,
-            "blank_lines_count": x.blank_lines_count,
-            "comment_lines_count": x.comment_lines_count,
-            "comment_to_code_ratio": x.comment_to_code_ratio,
+            "CountDeclClass": x.CountDeclClass,
+            "CountDeclExecutableUnit": x.CountDeclExecutableUnit,
+            "CountLine": x.CountLine,
+            "CountLineBlank": x.CountLineBlank,
+            "CountDeclFunction": x.CountDeclFunction,
+            "CountLineCode": x.CountLineCode,
+            "CountLineCodeDecl": x.CountLineCodeDecl,
+            "CountLineCodeExe": x.CountLineCodeExe,
+            "CountLineComment": x.CountLineComment,
+            "CountPath": x.CountPath,
+            "CountStmt": x.CountStmt,
+            "CountStmtDecl": x.CountStmtDecl,
+            "CountStmtExe": x.CountStmtExe,
+            "Cyclomatic": x.Cyclomatic,
+            "Essential": x.Essential,
+            "MaxNesting": x.MaxNesting,
+            "RatioCommentToCode": x.RatioCommentToCode,
         }
         list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
@@ -459,6 +472,8 @@ def save_metrics(data, space_key, source):
                 CountLineCode=ifExist('CountLineCode', file["attribute"]),
                 CountLineCodeDecl=ifExist(
                     'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
                 CountLineCodeExe=ifExist(
                     'CountLineCodeExe', file["attribute"]),
                 CountLineComment=ifExist(
@@ -485,6 +500,8 @@ def save_metrics(data, space_key, source):
                 CountLineCode=ifExist('CountLineCode', file["attribute"]),
                 CountLineCodeDecl=ifExist(
                     'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
                 CountLineCodeExe=ifExist(
                     'CountLineCodeExe', file["attribute"]),
                 CountLineComment=ifExist(
@@ -514,6 +531,7 @@ def save_metrics(data, space_key, source):
             CountLine=ifExist('CountLine', metrics),
             CountLineBlank=ifExist('CountLineBlank', metrics),
             CountLineCode=ifExist('CountLineCode', metrics),
+            CountDeclFile=ifExist('CountDeclFile', metrics),
             CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
             CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
             CountLineComment=ifExist('CountLineComment', file["attribute"]),
@@ -539,6 +557,7 @@ def save_metrics(data, space_key, source):
             CountLine=ifExist('CountLine', metrics),
             CountLineBlank=ifExist('CountLineBlank', metrics),
             CountLineCode=ifExist('CountLineCode', metrics),
+            CountDeclFile=ifExist('CountDeclFile', metrics),
             CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
             CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
             CountLineComment=ifExist('CountLineComment', file["attribute"]),
