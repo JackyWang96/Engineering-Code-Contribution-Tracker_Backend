@@ -6,7 +6,7 @@ from TeamSPBackend.common import utils
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics, GitContribution
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -116,6 +116,8 @@ def updateCommits(request, *args, **kwargs):
     space_key = json_body.get("space_key")
     coordinator_id = request.session.get('coordinator_id')
     doUpdate(coordinator_id, space_key)
+    resp = init_http_response_my_enum(RespCode.success)
+    return make_json_response(resp=resp)
 
 
 def autoUpdateCommits():
@@ -174,6 +176,7 @@ def getCommits(request, *args, **kwargs):
     for x in record:
         dict = {
             "date": x.date,
+            "sha": x.sha,
             "author": x.username,
             "url": x.url,
             "message": x.message,
@@ -198,54 +201,70 @@ def listContribution(request, *args, **kwargs):
             url=url, headers={'Authorization': 'Bearer ' + token})
         convert = json.loads(content.text)
         for x in convert:
+            commit = x.get("total")
+            author = x.get("author").get("login")
+            source = item.get("source")
+            if GitContribution.objects.filter(author=author, space_key=space_key, source=source).exists():
+                GitContribution.objects.filter(
+                    author=author, space_key=space_key, source=source).update(commit=commit)
+            else:
+                commit = GitContribution.objects.create(
+                    commit=commit,
+                    author=author,
+                    space_key=space_key,
+                    source=source
+                )
+                commit.save()
             dict = {
-                "commits": x.get("total"),
-                "author": x.get("author").get("login"),
-                "source": item.get("source")
+                "commits": commit,
+                "author": author,
+                "space_key": space_key,
+                "source": source
             }
             list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 # changes in one commits
-def getUpdates(request, *args, **kwargs):
+
+
+def getCommitChanges(request, *args, **kwargs):
     json_body = json.loads(request.body)
-    token = json_body.get("token")
-    owner = json_body.get("owner")
-    repo = json_body.get("repo")
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    source = json_body.get("source")
+    token = getToken(coordinator_id, space_key)
+    record = getOwnerRepo(coordinator_id, space_key)
     sha = json_body.get("sha")
-    
-    url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha 
-    content = requests.get(url=url,headers={'Authorization': 'Bearer ' + token})
-    
-    
-    convert = json.loads(content.text)
-    files = convert.get("files")
     list = []
-    fileChange = []
-    for x in files :
-        dict = {
-            "filename" : x.get("filename"),
-            "addition" : x.get("additions"),
+    for item in record:
+        if source != item.get("source"):
+            continue
+        owner = item.get("owner")
+        repo = item.get("repo")
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        files = convert.get("files")
+        fileChange = []
+        for x in files:
+            dict = {
+                "filename": x.get("filename"),
+                "addition": x.get("additions"),
+            }
+            fileChange.append(dict)
+
+        total = {
+            "sha": convert.get("sha"),
+            "total": convert.get("stats").get("total"),
+            "additions": convert.get("stats").get("additions"),
+            "deletions": convert.get("stats").get("deletions"),
+            "file_change": fileChange
         }
-        fileChange.append(dict)
+        list.append(total)
 
-    total = {
-        "sha" : convert.get("sha"),
-        "total": convert.get("stats").get("total"),
-        "additions": convert.get("stats").get("additions"),
-        "deletions": convert.get("stats").get("deletions"),
-        "file_change": fileChange
-    }  
-    list.append(total)
-
-            
     return HttpResponse(json.dumps(list), content_type="application/json")
-
-
-    
-
-
 
 
 def getLastCommit(request, *args, **kwargs):
