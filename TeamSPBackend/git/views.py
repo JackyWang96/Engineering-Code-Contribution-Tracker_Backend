@@ -6,7 +6,7 @@ from TeamSPBackend.common import utils
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics, GitContribution
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -200,11 +200,27 @@ def listContribution(request, *args, **kwargs):
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
         convert = json.loads(content.text)
+        contri = GitContribution.objects.create(
+            commit
+        )
         for x in convert:
+            commit = x.get("total")
+            author = x.get("author").get("login")
+            source = item.get("source")
+            if GitContribution.objects.filter(author=author, source=source).exists():
+                GitContribution.objects.filter(
+                    author=author, source=source).update(commit=commit)
+            else:
+                commit = GitCommit.objects.create(
+                    commit=commit,
+                    author=author,
+                    source=source
+                )
+                commit.save()
             dict = {
-                "commits": x.get("total"),
-                "author": x.get("author").get("login"),
-                "source": item.get("source")
+                "commits": commit,
+                "author": author,
+                "source": source
             }
             list.append(dict)
     # return JsonResponse(list)

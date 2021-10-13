@@ -15,6 +15,16 @@ class StudentCommitCounts(models.Model):
         db_table = 'student_commit_counts'
 
 
+class GitContribution(models.Model):
+
+    author = models.CharField(max_length=256, null=False)
+    commit = models.IntegerField(null=False)
+    source = models.CharField(max_length=256, null=True)
+
+    class Meta:
+        db_table = 'git_contribution'
+
+
 class GitCommitCounts(models.Model):
     # student_name = models.CharField(max_length=256, null=False)
     space_key = models.CharField(max_length=256, null=False)
