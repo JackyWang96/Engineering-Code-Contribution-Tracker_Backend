@@ -19,6 +19,7 @@ class GitContribution(models.Model):
 
     author = models.CharField(max_length=256, null=False)
     commit = models.IntegerField(null=False)
+    space_key = models.CharField(max_length=256, null=True)
     source = models.CharField(max_length=256, null=True)
 
     class Meta:

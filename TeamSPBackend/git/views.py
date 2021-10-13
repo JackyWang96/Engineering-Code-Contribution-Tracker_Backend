@@ -200,26 +200,25 @@ def listContribution(request, *args, **kwargs):
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
         convert = json.loads(content.text)
-        contri = GitContribution.objects.create(
-            commit
-        )
         for x in convert:
             commit = x.get("total")
             author = x.get("author").get("login")
             source = item.get("source")
-            if GitContribution.objects.filter(author=author, source=source).exists():
+            if GitContribution.objects.filter(author=author, space_key=space_key, source=source).exists():
                 GitContribution.objects.filter(
-                    author=author, source=source).update(commit=commit)
+                    author=author, space_key=space_key, source=source).update(commit=commit)
             else:
-                commit = GitCommit.objects.create(
+                commit = GitContribution.objects.create(
                     commit=commit,
                     author=author,
+                    space_key=space_key,
                     source=source
                 )
                 commit.save()
             dict = {
                 "commits": commit,
                 "author": author,
+                "space_key": space_key,
                 "source": source
             }
             list.append(dict)
