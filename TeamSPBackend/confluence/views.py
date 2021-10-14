@@ -125,7 +125,7 @@ def get_user(user, space_key):
 
 def download(url, file_path):
     r2 = requests.get(url, auth=(config.atl_username,
-                      config.atl_password), verify=False)
+                                 config.atl_password), verify=False)
     with open(file_path, 'wb') as file:
         file.write(r2.content)
 
@@ -149,26 +149,54 @@ def update_meeting_minutes():
     for coordinator in Coordinator.objects.all():
         # select each project which coordinator can see
         for project in ProjectCoordinatorRelation.objects.filter(coordinator_id=coordinator.id):
-            all_pages = confluence.get_all_pages_from_space(
-                project.space_key, start=0, limit=999999)
-            # get all the meeting pages exclude the parent page
-            for page in all_pages:
-                page_id = page['id']
-                # get all its child pages
-                child = confluence.get_page_child_by_type(page_id)
-                # if it does not have any child page, it is the page we want
-                if len(child) == 0:
-                    page_title = page['title']
-                    page_title_lower = page_title.lower()
-                    page_link_webui = page['_links']['webui']
-                    # each meeting minutes url
-                    page_link = 'https://confluence.cis.unimelb.edu.au:8443/' + page_link_webui
-                    if 'meeting' in page_title_lower:
-                        # it is not in the DB before
-                        if len(MeetingMinutes.objects.filter(meeting_title=page_title)) == 0:
-                            meet = MeetingMinutes(meeting_title=page_title, meeting_link=page_link,
-                                                  space_key=project.space_key)
-                            meet.save()
+
+            meeting_notes = confluence.get_all_pages_by_label(
+                "meeting-notes", start=0, limit=999999)
+            for note in meeting_notes:
+                title_list = note["title"].split(" ")
+                time = title_list[0]
+                title_list.remove(time)
+
+                if not utils.validateDate(time):
+                    continue
+
+                start = time
+                end = time
+                # revert the original title without time
+                title = ""
+                for titleWord in title_list:
+                    title += titleWord + " "
+
+                if not utils.meetingFilterBySpaceKey(project.space_key, note["_links"]["webui"]):
+                    continue
+
+                type = utils.meetingTypeFilter(title)
+                link = 'https://confluence.cis.unimelb.edu.au:8443' + \
+                    note['_links']['webui']
+                meetingRecord = MeetingMinutes(meeting_title=title, start_time=start, end_time=end,
+                                               meeting_type=type, meeting_link=link, space_key=project.space_key)
+                meetingRecord.save()
+
+            # all_pages = confluence.get_all_pages_from_space(
+            #     project.space_key, start=0, limit=999999)
+            # # get all the meeting pages exclude the parent page
+            # for page in all_pages:
+            #     page_id = page['id']
+            #     # get all its child pages
+            #     child = confluence.get_page_child_by_type(page_id)
+            #     # if it does not have any child page, it is the page we want
+            #     if len(child) == 0:
+            #         page_title = page['title']
+            #         page_title_lower = page_title.lower()
+            #         page_link_webui = page['_links']['webui']
+            #         # each meeting minutes url
+            #         page_link = 'https://confluence.cis.unimelb.edu.au:8443/' + page_link_webui
+            #         if 'meeting' in page_title_lower:
+            #             # it is not in the DB before
+            #             if len(MeetingMinutes.objects.filter(meeting_title=page_title)) == 0:
+            #                 meet = MeetingMinutes(meeting_title=page_title, meeting_link=page_link,
+            #                                       space_key=project.space_key)
+            #                 meet.save()
 
 
 # the meeting minutes will stored in DB as long as project is imported
