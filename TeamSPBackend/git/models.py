@@ -113,4 +113,4 @@ class GitLastCommit(models.Model):
     source = models.CharField(max_length=256, null=False)
 
     class Meta:
-        db_table = 'git_commit'
+        db_table = 'git_last_commit'

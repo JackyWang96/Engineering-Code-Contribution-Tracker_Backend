@@ -193,7 +193,7 @@ def listContribution(request, *args, **kwargs):
     list = []
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
-    username = getUserList(space_key)
+    usernames = getUserList(space_key)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
@@ -205,7 +205,7 @@ def listContribution(request, *args, **kwargs):
             commit = x.get("total")
             git_username = x.get("author").get("login")
             source = item.get("source")
-            if git_username not in username:
+            if git_username not in usernames:
                 continue
             username = UserList.objects.get(
                 git_username=git_username).user_name
@@ -224,6 +224,7 @@ def listContribution(request, *args, **kwargs):
             dict = {
                 "commits": commit,
                 "username": username,
+                "git_username": git_username,
                 "space_key": space_key,
                 "source": source
             }
@@ -278,10 +279,14 @@ def getLastCommit(request, *args, **kwargs):
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
     token = getToken(coordinator_id, space_key)
-    users = json_body.get("contributor")
+    # record = getOwnerRepo(coordinator_id,space_key)
+    contributor = GitContribution.objects.filter(space_key=space_key)
+    names = []
+    for item in contributor:
+        names.append(item.git_username)
     list = []
-    for x in users:
-        name = x.get("name")
+    for x in names:
+        name = x
         url = GitCommit.objects.filter(
             username=name, space_key=space_key)[0].url.split("/")
         apiUrl = baseUrl + "repos/" + \
@@ -295,7 +300,8 @@ def getLastCommit(request, *args, **kwargs):
         convert = json.loads(content.text)[0]
         dict = {
             "url": convert.get("html_url"),
-            "author": convert.get("commit").get("author").get("name"),
+            "git_username": convert.get("commit").get("author").get("name"),
+            "user": UserList.objects.get(git_username=name).user_name,
             "date": convert.get("commit").get("author").get("date"),
             "message": convert.get("commit").get("message")
         }
