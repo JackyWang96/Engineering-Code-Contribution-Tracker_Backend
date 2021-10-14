@@ -193,6 +193,7 @@ def listContribution(request, *args, **kwargs):
     list = []
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
+    usernames = getUserList(space_key)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
@@ -202,22 +203,28 @@ def listContribution(request, *args, **kwargs):
         convert = json.loads(content.text)
         for x in convert:
             commit = x.get("total")
-            author = x.get("author").get("login")
+            git_username = x.get("author").get("login")
             source = item.get("source")
-            if GitContribution.objects.filter(author=author, space_key=space_key, source=source).exists():
+            if git_username not in usernames:
+                continue
+            username = UserList.objects.get(
+                git_username=git_username).user_name
+            if GitContribution.objects.filter(git_username=git_username, space_key=space_key, source=source).exists():
                 GitContribution.objects.filter(
-                    author=author, space_key=space_key, source=source).update(commit=commit)
+                    git_username=git_username, space_key=space_key, source=source).update(commit=commit)
             else:
                 commit = GitContribution.objects.create(
                     commit=commit,
-                    author=author,
+                    git_username=git_username,
+                    username=username,
                     space_key=space_key,
                     source=source
                 )
                 commit.save()
             dict = {
                 "commits": commit,
-                "author": author,
+                "username": username,
+                "git_username": git_username,
                 "space_key": space_key,
                 "source": source
             }
@@ -232,37 +239,40 @@ def getCommitChanges(request, *args, **kwargs):
     json_body = json.loads(request.body)
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
-    source = json_body.get("source")
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
-    sha = json_body.get("sha")
+    shaRecord = GitCommit.objects.filter(space_key=space_key)
     list = []
     for item in record:
-        if source != item.get("source"):
-            continue
         owner = item.get("owner")
         repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha
-        content = requests.get(
-            url=url, headers={'Authorization': 'Bearer ' + token})
-        convert = json.loads(content.text)
-        files = convert.get("files")
-        fileChange = []
-        for x in files:
-            dict = {
-                "filename": x.get("filename"),
-                "addition": x.get("additions"),
-            }
-            fileChange.append(dict)
+        for sha in shaRecord:
+            url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha.sha
+            content = requests.get(
+                url=url, headers={'Authorization': 'Bearer ' + token})
+            convert = json.loads(content.text)
+            files = convert.get("files")
+            if files is None:
+                continue
+            fileChange = []
+            for x in files:
+                dict = {
+                    "filename": x.get("filename"),
+                    "addition": x.get("additions"),
+                }
+                fileChange.append(dict)
 
-        total = {
-            "sha": convert.get("sha"),
-            "total": convert.get("stats").get("total"),
-            "additions": convert.get("stats").get("additions"),
-            "deletions": convert.get("stats").get("deletions"),
-            "file_change": fileChange
-        }
-        list.append(total)
+            total = {
+                "sha": convert.get("sha"),
+                "space_key": sha.space_key,
+                "date": sha.date,
+                "source": sha.source,
+                "total": convert.get("stats").get("total"),
+                "additions": convert.get("stats").get("additions"),
+                "deletions": convert.get("stats").get("deletions"),
+                "file_change": fileChange
+            }
+            list.append(total)
 
     return HttpResponse(json.dumps(list), content_type="application/json")
 
@@ -272,10 +282,14 @@ def getLastCommit(request, *args, **kwargs):
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
     token = getToken(coordinator_id, space_key)
-    users = json_body.get("contributor")
+    # record = getOwnerRepo(coordinator_id,space_key)
+    contributor = GitContribution.objects.filter(space_key=space_key)
+    names = []
+    for item in contributor:
+        names.append(item.git_username)
     list = []
-    for x in users:
-        name = x.get("name")
+    for x in names:
+        name = x
         url = GitCommit.objects.filter(
             username=name, space_key=space_key)[0].url.split("/")
         apiUrl = baseUrl + "repos/" + \
@@ -289,7 +303,8 @@ def getLastCommit(request, *args, **kwargs):
         convert = json.loads(content.text)[0]
         dict = {
             "url": convert.get("html_url"),
-            "author": convert.get("commit").get("author").get("name"),
+            "git_username": convert.get("commit").get("author").get("name"),
+            "user": UserList.objects.get(git_username=name).user_name,
             "date": convert.get("commit").get("author").get("date"),
             "message": convert.get("commit").get("message")
         }
