@@ -43,6 +43,7 @@ class IndividualConfluenceContribution(models.Model):
     user_id = models.CharField(max_length=256)
     user_name = models.CharField(max_length=256)
     page_count = models.IntegerField()
+    attendence_count = models.IntegerField()
 
     class Meta:
         db_table = 'individual_confluence_contribution'

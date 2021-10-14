@@ -14,6 +14,8 @@ from django.db import transaction
 from TeamSPBackend.api import config
 from django.conf import settings
 import requests
+from requests.auth import HTTPBasicAuth
+from bs4 import BeautifulSoup
 
 
 def update_space_user_list(space_key):
@@ -312,14 +314,51 @@ def update_space_page_contribution(space_key):
                 id_name[user["displayName"]] = user["username"]
             member_contributions[user["displayName"]] += 1
 
+    attendence_counts = {}
+
+    meetingNotes = conf.get_all_pages_by_label(
+        "meeting-notes", start=0, limit=999999)
+    webUrlArray = []
+    attendeesStats = []
+
+    for note in meetingNotes:
+        if not utils.meetingFilterBySpaceKey(space_key, note["_links"]["webui"]):
+            continue
+        webUrlArray.append(
+            "https://confluence.cis.unimelb.edu.au:8443" + note["_links"]["webui"])
+
+    for url in webUrlArray:
+        response = requests.get(
+            url, auth=HTTPBasicAuth(atl_username, atl_password), verify=False)
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        array = soup.select("a[class~=user-mention]")
+
+        nameList = []
+        for ele in array:
+            nameList.append(ele.string.split("<")[0])
+        attendeesStats.append(nameList)
+
+    for stat in attendeesStats:
+        for name in stat:
+            if name in attendence_counts.keys():
+                attendence_counts[name] += 1
+            else:
+                attendence_counts[name] = 1
+
+    print(attendence_counts)
+
     page_contribution = []
     for user_name in member_contributions:
         page_count = member_contributions[user_name]
+        attendence_count = attendence_counts[user_name] if (
+            user_name in attendence_counts.keys()) else 0
         page_contribution.append(IndividualConfluenceContribution(
             space_key=space_key,
             user_id=id_name[user_name],
             user_name=user_name,
-            page_count=page_count
+            page_count=page_count,
+            attendence_count=attendence_count
         ))
 
     return page_contribution
