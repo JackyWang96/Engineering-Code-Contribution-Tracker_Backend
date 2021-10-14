@@ -239,37 +239,40 @@ def getCommitChanges(request, *args, **kwargs):
     json_body = json.loads(request.body)
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
-    source = json_body.get("source")
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
-    sha = json_body.get("sha")
+    shaRecord = GitCommit.objects.filter(space_key=space_key)
     list = []
     for item in record:
-        if source != item.get("source"):
-            continue
         owner = item.get("owner")
         repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha
-        content = requests.get(
-            url=url, headers={'Authorization': 'Bearer ' + token})
-        convert = json.loads(content.text)
-        files = convert.get("files")
-        fileChange = []
-        for x in files:
-            dict = {
-                "filename": x.get("filename"),
-                "addition": x.get("additions"),
-            }
-            fileChange.append(dict)
+        for sha in shaRecord:
+            url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha.sha
+            content = requests.get(
+                url=url, headers={'Authorization': 'Bearer ' + token})
+            convert = json.loads(content.text)
+            files = convert.get("files")
+            if files is None:
+                continue
+            fileChange = []
+            for x in files:
+                dict = {
+                    "filename": x.get("filename"),
+                    "addition": x.get("additions"),
+                }
+                fileChange.append(dict)
 
-        total = {
-            "sha": convert.get("sha"),
-            "total": convert.get("stats").get("total"),
-            "additions": convert.get("stats").get("additions"),
-            "deletions": convert.get("stats").get("deletions"),
-            "file_change": fileChange
-        }
-        list.append(total)
+            total = {
+                "sha": convert.get("sha"),
+                "space_key": sha.space_key,
+                "date": sha.date,
+                "source": sha.source,
+                "total": convert.get("stats").get("total"),
+                "additions": convert.get("stats").get("additions"),
+                "deletions": convert.get("stats").get("deletions"),
+                "file_change": fileChange
+            }
+            list.append(total)
 
     return HttpResponse(json.dumps(list), content_type="application/json")
 
