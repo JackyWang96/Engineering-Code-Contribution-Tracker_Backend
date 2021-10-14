@@ -17,7 +17,8 @@ class StudentCommitCounts(models.Model):
 
 class GitContribution(models.Model):
 
-    author = models.CharField(max_length=256, null=False)
+    git_username = models.CharField(max_length=256, null=False)
+    username = models.CharField(max_length=256, null=False)
     commit = models.IntegerField(null=False)
     space_key = models.CharField(max_length=256, null=True)
     source = models.CharField(max_length=256, null=True)
@@ -92,6 +93,18 @@ class FileMetrics(models.Model):
 
 class GitCommit(models.Model):
     sha = models.CharField(max_length=256, null=False)
+    url = models.CharField(max_length=256, null=False)
+    username = models.CharField(max_length=256, null=False)
+    date = models.CharField(max_length=256, null=False)
+    message = models.CharField(max_length=512, null=False)
+    space_key = models.CharField(max_length=256, null=False)
+    source = models.CharField(max_length=256, null=False)
+
+    class Meta:
+        db_table = 'git_commit'
+
+
+class GitLastCommit(models.Model):
     url = models.CharField(max_length=256, null=False)
     username = models.CharField(max_length=256, null=False)
     date = models.CharField(max_length=256, null=False)
