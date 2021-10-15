@@ -20,6 +20,7 @@ class GitContribution(models.Model):
     git_username = models.CharField(max_length=256, null=False)
     username = models.CharField(max_length=256, null=False)
     commit = models.IntegerField(null=False)
+    total = models.IntegerField(null=False)
     space_key = models.CharField(max_length=256, null=True)
     source = models.CharField(max_length=256, null=True)
 
@@ -104,13 +105,14 @@ class GitCommit(models.Model):
         db_table = 'git_commit'
 
 
-class GitLastCommit(models.Model):
-    url = models.CharField(max_length=256, null=False)
-    username = models.CharField(max_length=256, null=False)
+class CommitChange(models.Model):
+    sha = models.CharField(max_length=256, null=False)
     date = models.CharField(max_length=256, null=False)
-    message = models.CharField(max_length=512, null=False)
-    space_key = models.CharField(max_length=256, null=False)
     source = models.CharField(max_length=256, null=False)
+    space_key = models.CharField(max_length=256, null=False)
+    total = models.IntegerField(null=False)
+    additions = models.IntegerField(null=False)
+    deletions = models.IntegerField(null=False)
 
     class Meta:
-        db_table = 'git_last_commit'
+        db_table = 'commit_change'
