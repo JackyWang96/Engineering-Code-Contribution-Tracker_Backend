@@ -371,7 +371,9 @@ def get_user_list(request, space_key):
                 "name": user_info.user_name,
                 "id": user_info.user_id,
                 "email": user_info.email,
-                "picture": user_info.picture
+                "picture": user_info.picture,
+                "git_name": user_info.git_username,
+                "jira_name": user_info.jira_username
             }
             user_list.append(user_detail)
         resp = init_http_response(
