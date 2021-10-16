@@ -62,6 +62,9 @@ urlpatterns = [
          page_contributions.get_all_page_contributions),
     path('confluence/spaces/<space_key>/pages/<int:page_id>',
          confluence.get_page_contributors),
+    path('confluence/spaces/<space_key>/pages/contributions',
+         confluence.get_page_contributors),
+     
     path('confluence/groups', confluence.get_all_groups),
     path('confluence/updateJiraUsername', confluence.update_jira_username),
     path('confluence/updateGitUsername', confluence.update_git_username),
@@ -70,6 +73,8 @@ urlpatterns = [
     path('confluence/users/<member>', confluence.get_user_details),
     path('subject/<subjectcode>/<year>/supervisors',
          confluence.get_subject_supervisors),
+    path('confluence/getTest', confluence.getTest),
+    
     # COMP90082 21 S1 sprint1
     path('confluence/spaces/<key_word>', confluence.get_spaces_by_key),
     path('confluence/<space_key>/meeting_minutes',
