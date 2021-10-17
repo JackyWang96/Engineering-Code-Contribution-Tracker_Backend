@@ -14,7 +14,7 @@ from TeamSPBackend.common.choices import RespCode
 from TeamSPBackend.common.utils import make_json_response, check_user_login, body_extract, check_body, \
     init_http_response_my_enum
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
-from TeamSPBackend.confluence.models import UserList
+from TeamSPBackend.confluence.models import IndividualConfluenceContribution, UserList
 import time
 import datetime
 from TeamSPBackend.common.utils import transformTimestamp
@@ -214,6 +214,60 @@ def doUpdate(coordinator_id, space_key):
                 commit.save()
     resp = init_http_response_my_enum(RespCode.success)
     return make_json_response(resp=resp)
+
+
+def getAllContribution(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    space_key = json_body.get("space_key")
+    record = GitContribution.objects.filter(space_key=space_key)
+    git_update = 0
+    git_change = 0
+    con_update = 0
+    con_att = 0
+    # con_change=0
+    output = []
+    names = []
+    for item in record:
+        git_update += item.commit
+        if item.username not in names:
+            names.append(item.username)
+        git_change += item.total
+        con_update += IndividualConfluenceContribution.objects.get(
+            user_name=item.username).page_count
+        con_att += IndividualConfluenceContribution.objects.get(
+            user_name=item.username).attendence_count
+        # con_change += IndividualConfluenceContribution.objects.get(user_name=item.username).xxxx_count
+    for item in names:
+        dict = {
+            "realName": item,
+            "git_update_per": (getCommitCount(item, space_key)*100.00)/git_update,
+            "git_change_per": (getTotalCount(item, space_key)*100.00)/git_change,
+            "con_update_per": (IndividualConfluenceContribution.objects.get(user_name=item).page_count*100.00)/con_update,
+            "con_att_per": (IndividualConfluenceContribution.objects.get(user_name=item).attendence_count*100.00)/con_att,
+            # "con_change_per": (IndividualConfluenceContribution.objects.get(user_name=item).xxxx_count*1.00)/con_change,
+        }
+        output.append(dict)
+    return HttpResponse(json.dumps(output), content_type="application/json")
+
+
+def getCommitCount(name, space_key):
+    record = GitContribution.objects.filter(username=name, space_key=space_key)
+    count = 0
+    if record is None:
+        return count
+    for item in record:
+        count += item.commit
+    return count
+
+
+def getTotalCount(name, space_key):
+    record = GitContribution.objects.filter(username=name, space_key=space_key)
+    count = 0
+    if record is None:
+        return count
+    for item in record:
+        count += item.total
+    return count
 
 
 def getCommits(request, *args, **kwargs):
