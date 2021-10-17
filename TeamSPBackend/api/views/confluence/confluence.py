@@ -79,24 +79,30 @@ def getTest(request):
         confluence = log_into_confluence(username, password)
 
         # meetingNotes = confluence.history(page_id='78334464')
-        convert = confluence.history(page_id='83142146')
+        convert = confluence.history(page_id='78333963')
         
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
         list=[]
-        data = {
+        for version in convert:
+            data = {
             "username": convert.get("lastUpdated").get("by").get("username"),
             "displayName": convert.get("lastUpdated").get("by").get("displayName"),
             "createdDate": convert.get("lastUpdated").get("when"),
-            "url": convert.get("lastUpdated").get("_links"),
+            "url": convert.get("lastUpdated").get("_links").get("self"),
         # #    get("lastUpdated").
         #     # "displayName": convert["displayName"],
         #     # "createdDate": convert["when"],
         #     # "url": convert["_links"]
-        }
+            }
 
         list.append(data)
-
+        for page in convert:
+            data.append({
+                'id': page['id'],
+                'type': page['type'],
+                'title': page['title']
+            })
         # dict = {
         #     "url": convert.get("html_url"),
         #     "author": convert.get("commit").get("author").get("name"),
@@ -114,6 +120,103 @@ def getTest(request):
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
+
+@require_http_methods(['GET'])
+def getTest1(request):
+
+    try:
+        username = "zeyuwang1"
+        password = "zhiyu01!yu"
+        confluence = log_into_confluence(username, password)
+
+        # meetingNotes = confluence.history(page_id='78334464')
+        convert = confluence.get_page_by_id(page_id='78333963')
+        
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+       
+        
+        # #    get("lastUpdated").
+        #     # "displayName": convert["displayName"],
+        #     # "createdDate": convert["when"],
+        #     # "url": convert["_links"]
+     
+
+        # dict = {
+        #     "url": convert.get("html_url"),
+        #     "author": convert.get("commit").get("author").get("name"),
+        #     "date": convert.get("commit").get("author").get("date"),
+        #     "message": convert.get("commit").get("message")
+        # }
+        # list.append(dict)
+
+        resp['data'] = convert
+        
+
+        # return HttpResponse(json.dumps(resp), content_type="application/json")
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+
+@require_http_methods(['GET'])
+def getUpdate(request):
+     #page update by version and page id
+    try:
+        username = "zeyuwang1"
+        password = "zhiyu01!yu"
+        confluence = log_into_confluence(username, password)
+
+      
+        # convert = confluence.get_content_history_by_version_number(content_id="78333963", version_number="1")
+        convert = confluence.get_all_version_content_history_by_page_id(content_id="78333963")
+        # url = 'https://confluence.cis.unimelb.edu.au:8443/rest/experimental/content/78333963/version/1
+        
+        print(convert)
+        list=[]
+        for known in convert:
+             list.append ({
+            'username': known['username'],
+            "displayName": known["displayName"],
+            "Time": known["when"],
+            "url": known["webui"] 
+            })
+        #     list.append ({
+        #     "username": known.get("by").get("username"),
+        #     "displayName": known.get("by").get("displayName"),
+        #     "Time": known.get("when"),
+        #     "url": known.get("_links").get("base")+convert.get("content").get("_links").get("webui") 
+        #     })
+        # # #    get("lastUpdated").
+        #     # "displayName": convert["displayName"],
+        #     # "createdDate": convert["when"],
+        #     # "url": convert["_links"]
+        
+        #  for group in conf_resp:
+        #     data.append({
+        #         'type': group['type'],
+        #         'name': group['name']
+        #     })
+        # list.append(data)
+
+        # dict = {
+        #     "url": convert.get("html_url"),
+        #     "author": convert.get("commit").get("author").get("name"),
+        #     "date": convert.get("commit").get("author").get("date"),
+        #     "message": convert.get("commit").get("message")
+        # }
+        # list.append(dict)
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+
+        # resp['data'] = convert
+        resp['data'] = list
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['POST'])
@@ -249,6 +352,66 @@ def get_pages_of_space(request, space_key):
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
     # Get Page Content by ID (HTML) (lower prio for now)
+
+@require_http_methods(['GET'])
+def get_all_pages_of_space(request, space_key):
+    """Get all the pages under the Confluence Space
+    Method: GET
+    Request: space
+    """
+    user = request.session.get('user')
+    # username = user['atl_username']
+    # password = user['atl_password']
+
+
+    username = "zeyuwang1"
+    password = "zhiyu01!yu"
+    try:
+        confluence = log_into_confluence(username, password)
+        conf_resp = confluence.get_all_pages_from_space(space_key)
+        data = []
+        for page in conf_resp:
+            data.append({
+                'id': page['id'],
+            })
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+        resp['data'] = data
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+    # Get Page Content by ID (HTML) (lower prio for now)
+@require_http_methods(['GET'])
+def get_all_update(request, space_key):
+    """Get all the pages under the Confluence Space
+    Method: GET
+    Request: space
+    """
+    user = request.session.get('user')
+    # username = user['atl_username']
+    # password = user['atl_password']
+
+
+    username = "zeyuwang1"
+    password = "zhiyu01!yu"
+    try:
+        confluence = log_into_confluence(username, password)
+        conf_resp = confluence.get_all_pages_from_space(space_key)
+        data = []
+        for page in conf_resp:
+            data.append({
+                'id': page['id'],
+            })
+        
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+        resp['data'] = data
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['GET'])
@@ -395,14 +558,14 @@ def get_page_contributors(request, *args, **kwargs):
         # Todo: change these to configurable inputs
         domain = "https://confluence.cis.unimelb.edu.au"
         port = "8443"
-        url = f"{domain}:{port}/rest/api/content/{page_id}/history"
+        url = f"{domain}:{port}/rest/api/content/{page_id}/history?expand=contributors.publishers.users"
         print("url:"+ url)
         
         # parameters = {"expand": "contributors.publishers.users"}
-        conf_resp = requests.get(url)
+        conf_resp = requests.get(url=url, auth=HTTPBasicAuth(username, password))
             
             # url=url, params=parameters, auth=HTTPBasicAuth(username, password)).json()
-            
+        convert = json.loads(conf_resp)
         data = {
             "createdBy": conf_resp["createdBy"],
             "createdDate": conf_resp["createdDate"],
