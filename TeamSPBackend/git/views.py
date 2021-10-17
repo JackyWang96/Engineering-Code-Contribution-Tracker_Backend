@@ -137,7 +137,7 @@ def doUpdate(coordinator_id, space_key):
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=150"
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=100"
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
         convert = json.loads(content.text)
@@ -184,7 +184,6 @@ def doUpdate(coordinator_id, space_key):
             change.save()
 
         # update list contribution
-        usernames = getUserList(space_key)
         url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
@@ -196,9 +195,9 @@ def doUpdate(coordinator_id, space_key):
             count = 0
             for number in x.get("weeks"):
                 count = count + number.get("a") + number.get("d")
-            if git_username not in usernames:
+            if git_username not in username:
                 continue
-            username = UserList.objects.get(
+            realName = UserList.objects.get(
                 git_username=git_username).user_name
             if GitContribution.objects.filter(git_username=git_username, space_key=space_key, source=source).exists():
                 GitContribution.objects.filter(
@@ -207,7 +206,7 @@ def doUpdate(coordinator_id, space_key):
                 commit = GitContribution.objects.create(
                     commit=commit,
                     git_username=git_username,
-                    username=username,
+                    username=realName,
                     total=count,
                     space_key=space_key,
                     source=source
