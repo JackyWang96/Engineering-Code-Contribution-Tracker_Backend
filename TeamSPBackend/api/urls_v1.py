@@ -74,6 +74,10 @@ urlpatterns = [
     path('subject/<subjectcode>/<year>/supervisors',
          confluence.get_subject_supervisors),
     path('confluence/getTest', confluence.getTest),
+    path('confluence/getTest1', confluence.getTest1),
+    path('confluence/getUpdate', confluence.getUpdate),
+    path('confluence/spaces/<space_key>/getAllpage', confluence.get_all_pages_of_space),
+
     
     # COMP90082 21 S1 sprint1
     path('confluence/spaces/<key_word>', confluence.get_spaces_by_key),
