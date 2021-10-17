@@ -6,7 +6,7 @@ from TeamSPBackend.common import utils
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics, GitContribution
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics, GitContribution, CommitChange
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -133,10 +133,11 @@ def doUpdate(coordinator_id, space_key):
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
     username = getUserList(space_key)
+    shaRecord = GitCommit.objects.filter(space_key=space_key)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=100"
+        url = baseUrl + "repos/" + owner + "/" + repo + "/commits?per_page=150"
         content = requests.get(
             url=url, headers={'Authorization': 'Bearer ' + token})
         convert = json.loads(content.text)
@@ -159,10 +160,59 @@ def doUpdate(coordinator_id, space_key):
                 source=item.get("source")
             )
             commit.save()
-    # except Exception as e:
-    #     print(e)
-    #     resp = init_http_response_my_enum(RespCode.invalid_parameter)
-    #     return make_json_response(resp=resp)
+
+        # update changes to commit change table
+        for sha in shaRecord:
+            if CommitChange.objects.filter(sha=sha.sha).exists():
+                continue
+            url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha.sha
+            content = requests.get(
+                url=url, headers={'Authorization': 'Bearer ' + token})
+            convert = json.loads(content.text)
+            files = convert.get("files")
+            if files is None:
+                continue
+            change = CommitChange.objects.create(
+                sha=convert.get("sha"),
+                date=sha.date,
+                source=sha.source,
+                space_key=sha.space_key,
+                total=convert.get("stats").get("total"),
+                additions=convert.get("stats").get("additions"),
+                deletions=convert.get("stats").get("deletions"),
+            )
+            change.save()
+
+        # update list contribution
+        usernames = getUserList(space_key)
+        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        for x in convert:
+            commit = x.get("total")
+            git_username = x.get("author").get("login")
+            source = item.get("source")
+            count = 0
+            for number in x.get("weeks"):
+                count = count + number.get("a") + number.get("d")
+            if git_username not in usernames:
+                continue
+            username = UserList.objects.get(
+                git_username=git_username).user_name
+            if GitContribution.objects.filter(git_username=git_username, space_key=space_key, source=source).exists():
+                GitContribution.objects.filter(
+                    git_username=git_username, space_key=space_key, source=source).update(commit=commit, total=count)
+            else:
+                commit = GitContribution.objects.create(
+                    commit=commit,
+                    git_username=git_username,
+                    username=username,
+                    total=count,
+                    space_key=space_key,
+                    source=source
+                )
+                commit.save()
     resp = init_http_response_my_enum(RespCode.success)
     return make_json_response(resp=resp)
 
@@ -191,44 +241,17 @@ def listContribution(request, *args, **kwargs):
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
     list = []
-    token = getToken(coordinator_id, space_key)
-    record = getOwnerRepo(coordinator_id, space_key)
-    usernames = getUserList(space_key)
-    for item in record:
-        owner = item.get("owner")
-        repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
-        content = requests.get(
-            url=url, headers={'Authorization': 'Bearer ' + token})
-        convert = json.loads(content.text)
-        for x in convert:
-            commit = x.get("total")
-            git_username = x.get("author").get("login")
-            source = item.get("source")
-            if git_username not in usernames:
-                continue
-            username = UserList.objects.get(
-                git_username=git_username).user_name
-            if GitContribution.objects.filter(git_username=git_username, space_key=space_key, source=source).exists():
-                GitContribution.objects.filter(
-                    git_username=git_username, space_key=space_key, source=source).update(commit=commit)
-            else:
-                commit = GitContribution.objects.create(
-                    commit=commit,
-                    git_username=git_username,
-                    username=username,
-                    space_key=space_key,
-                    source=source
-                )
-                commit.save()
-            dict = {
-                "commits": commit,
-                "username": username,
-                "git_username": git_username,
-                "space_key": space_key,
-                "source": source
-            }
-            list.append(dict)
+    contributors = GitContribution.objects.filter(space_key=space_key)
+    for user in contributors:
+        dict = {
+            "commits": user.commit,
+            "username": user.username,
+            "git_username": user.git_username,
+            "space_key": user.space_key,
+            "total": user.total,
+            "source": user.source
+        }
+        list.append(dict)
     # return JsonResponse(list)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
@@ -239,41 +262,18 @@ def getCommitChanges(request, *args, **kwargs):
     json_body = json.loads(request.body)
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
-    token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
-    shaRecord = GitCommit.objects.filter(space_key=space_key)
     list = []
+    record = CommitChange.objects.filter(space_key=space_key)
     for item in record:
-        owner = item.get("owner")
-        repo = item.get("repo")
-        for sha in shaRecord:
-            url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha.sha
-            content = requests.get(
-                url=url, headers={'Authorization': 'Bearer ' + token})
-            convert = json.loads(content.text)
-            files = convert.get("files")
-            if files is None:
-                continue
-            fileChange = []
-            for x in files:
-                dict = {
-                    "filename": x.get("filename"),
-                    "addition": x.get("additions"),
-                }
-                fileChange.append(dict)
-
-            total = {
-                "sha": convert.get("sha"),
-                "space_key": sha.space_key,
-                "date": sha.date,
-                "source": sha.source,
-                "total": convert.get("stats").get("total"),
-                "additions": convert.get("stats").get("additions"),
-                "deletions": convert.get("stats").get("deletions"),
-                "file_change": fileChange
-            }
-            list.append(total)
-
+        total = {
+            "date": item.date,
+            "source": item.source,
+            "total": item.total,
+            "additions": item.additions,
+            "deletions": item.deletions,
+        }
+        list.append(total)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
@@ -566,18 +566,17 @@ def save_metrics(data, space_key, source):
             CountLineBlank=ifExist('CountLineBlank', metrics),
             CountLineCode=ifExist('CountLineCode', metrics),
             CountDeclFile=ifExist('CountDeclFile', metrics),
-            CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
-            CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
-            CountLineComment=ifExist('CountLineComment', file["attribute"]),
-            CountPath=ifExist('CountPath', file["attribute"]),
-            CountStmt=ifExist('CountStmt', file["attribute"]),
-            CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
-            CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
-            Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
-            Essential=ifExist('Essential', file["attribute"]),
-            MaxNesting=ifExist('MaxNesting', file["attribute"]),
-            RatioCommentToCode=ifExist(
-                'RatioCommentToCode', file["attribute"]),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', metrics),
+            CountLineCodeExe=ifExist('CountLineCodeExe', metrics),
+            CountLineComment=ifExist('CountLineComment', metrics),
+            CountPath=ifExist('CountPath', metrics),
+            CountStmt=ifExist('CountStmt', metrics),
+            CountStmtDecl=ifExist('CountStmtDecl', metrics),
+            CountStmtExe=ifExist('CountStmtExe', metrics),
+            Cyclomatic=ifExist('Cyclomatic', metrics),
+            Essential=ifExist('Essential', metrics),
+            MaxNesting=ifExist('MaxNesting', metrics),
+            RatioCommentToCode=ifExist('RatioCommentToCode', metrics),
         )
     else:
         metrics_dto = GitMetrics(
@@ -592,18 +591,17 @@ def save_metrics(data, space_key, source):
             CountLineBlank=ifExist('CountLineBlank', metrics),
             CountLineCode=ifExist('CountLineCode', metrics),
             CountDeclFile=ifExist('CountDeclFile', metrics),
-            CountLineCodeDecl=ifExist('CountLineCodeDecl', file["attribute"]),
-            CountLineCodeExe=ifExist('CountLineCodeExe', file["attribute"]),
-            CountLineComment=ifExist('CountLineComment', file["attribute"]),
-            CountPath=ifExist('CountPath', file["attribute"]),
-            CountStmt=ifExist('CountStmt', file["attribute"]),
-            CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
-            CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
-            Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
-            Essential=ifExist('Essential', file["attribute"]),
-            MaxNesting=ifExist('MaxNesting', file["attribute"]),
-            RatioCommentToCode=ifExist(
-                'RatioCommentToCode', file["attribute"]),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', metrics),
+            CountLineCodeExe=ifExist('CountLineCodeExe', metrics),
+            CountLineComment=ifExist('CountLineComment', metrics),
+            CountPath=ifExist('CountPath', metrics),
+            CountStmt=ifExist('CountStmt', metrics),
+            CountStmtDecl=ifExist('CountStmtDecl', metrics),
+            CountStmtExe=ifExist('CountStmtExe', metrics),
+            Cyclomatic=ifExist('Cyclomatic', metrics),
+            Essential=ifExist('Essential', metrics),
+            MaxNesting=ifExist('MaxNesting', metrics),
+            RatioCommentToCode=ifExist('RatioCommentToCode', metrics),
             source=source
         )
         metrics_dto.save()
