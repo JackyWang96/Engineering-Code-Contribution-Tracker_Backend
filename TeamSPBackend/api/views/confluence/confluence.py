@@ -2,7 +2,7 @@ from atlassian import Confluence
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate,ConfluenceNewUpdate
 from TeamSPBackend.common.choices import RespCode
 from django.views.decorators.http import require_http_methods
 from django.http.response import HttpResponse
@@ -332,7 +332,7 @@ def get_space(request, space_key):
                 'id': conf_homepage['id'],
                 'type': conf_homepage['type'],
                 'title': conf_homepage['title'],
-
+            
             }
         }
         resp = init_http_response(
@@ -814,3 +814,40 @@ def delete_project(request, *args, **kwargs):
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+def get_Confluence_Newst(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    url = json_body.get("url")
+    # information = ConfluenceUpdate.objects.filter(url__contains=url)
+    information = ConfluenceNewUpdate.objects.filter(url__contains=url)
+    list=[]
+    for x in information:
+        dict={
+            "title": x.title,
+            'displayName': x.displayName,
+            # 'time': x.time,
+            'url': x.url
+
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+def get_confluence_update_information(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    url = json_body.get("url")
+    information = ConfluenceUpdate.objects.filter(url__contains=url)
+    list=[]
+    for x in information:
+        dict={
+            "title": x.title,
+            'displayName': x.displayName,
+            'time': x.time,
+            'url': x.url
+
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+        
+        
+

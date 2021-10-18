@@ -169,7 +169,7 @@ def update_meeting_minutes():
                         if len(MeetingMinutes.objects.filter(meeting_title=page_title)) == 0:
                             meet = MeetingMinutes(meeting_title=page_title, meeting_link=page_link,
                                                   space_key=project.space_key)
-                            meet.save()
+                            # meet.save()
 
 
 # the meeting minutes will stored in DB as long as project is imported

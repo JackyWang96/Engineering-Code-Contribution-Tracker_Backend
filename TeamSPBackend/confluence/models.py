@@ -53,3 +53,13 @@ class ConfluenceUpdate(models.Model):
 
     class Meta:
         db_table = 'confluence_update_information'
+
+
+class ConfluenceNewUpdate(models.Model):
+    title = models.CharField(max_length=256, null=False)
+    displayName = models.CharField(max_length=256, null=False)
+    url = models.CharField(max_length=512, null=False)
+    
+
+    class Meta:
+        db_table = 'confluence_newest_page'
