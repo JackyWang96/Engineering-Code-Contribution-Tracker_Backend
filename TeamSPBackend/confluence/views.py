@@ -3,13 +3,14 @@ import logging
 import atlassian
 import urllib3
 from ..api.views.confluence.confluence import log_into_confluence
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
 from datetime import datetime
 import time
 from TeamSPBackend.common import utils
 from TeamSPBackend.api.views.confluence import confluence
 from TeamSPBackend.coordinator.models import Coordinator
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
+
 from django.db import transaction
 from TeamSPBackend.api import config
 from django.conf import settings
@@ -322,8 +323,53 @@ def get_spaces():
     return spaces
 
 
+def get_all_update(request, space_key):
+    """Get all the pages under the Confluence Space
+    Method: GET
+    Request: space
+    """
+    user = request.session.get('user')
+    # username = user['atl_username']
+    # password = user['atl_password']
+
+    space_key='COMP900822021SM2SP'
+    username = "zeyuwang1"
+    password = "zhiyu01!yu"
+    try:
+        confluence = log_into_confluence(username, password)
+        
+        convert = confluence.get_all_pages_of_space(space_key)
+        
+        for id in convert:
+            data=(confluence.getUpdate1(contentId=id))
+            update=ConfluenceUpdate.objects.create(
+                title=data.get("title"),
+                displayName=data.get("displayName"),
+                time=data.get("time"),
+                url=data.get("url")
+            )
+
+            update.save()
+            
+            
+
+        print(data)
+        
+        
+        return HttpResponse(json.dumps(data), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+
+
+
 # update meeting minutes on a daily basis
 utils.start_schedule(update_meeting_minutes, 60 * 60 * 24)
 utils.start_schedule(update_page_history, 60 * 60 * 24)
 # update page contributions and user list on a daily basis
 utils.start_schedule(update_user_list, 60 * 60 * 24)
+utils.start_schedule(get_all_update, 60 * 60 * 24)
+
+
