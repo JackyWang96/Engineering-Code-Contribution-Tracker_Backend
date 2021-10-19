@@ -707,7 +707,11 @@ def get_Confluence_Newst(request, url, *args, **kwargs):
 def get_confluence_update_information(request, url, *args, **kwargs):
 
     information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=[
-        'Ankita Dhar', 'Akil Munusamy Pitchandi', 'Sharodh Keelamanakudi Ragupathi', 'admin admin', 'Pawan Malhotra', 'Abdul Rehman Mohammad', 'YALAN ZHAO'])
+        'Ankita Dhar', 'Akil Munusamy Pitchandi',  
+        'Sharodh Keelamanakudi Ragupathi', 
+        'admin admin', 'Pawan Malhotra', 
+        'Abdul Rehman Mohammad', 
+        'YALAN ZHAO'])
 
     list = []
     for x in information:
@@ -721,29 +725,7 @@ def get_confluence_update_information(request, url, *args, **kwargs):
         list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
-def get_all_version_content_history_by_url(self, url):
-        """
-        Get content history by version number
-        :param content_id:
-        :param version_number:
-        :return:
-        """
-        x=url.split('https://confluence.cis.unimelb.edu.au:8443/')
-        
-        print(x[1])
-        return self.get(x[1])
 
-def get_all_version_content_history_by_page_id(self, content_id):
-        """
-        Get content history by version number
-        :param content_id:
-        :param version_number:
-        :return:
-        """
-        url = 'rest/experimental/content/{0}/version/'.format(content_id)
-       
-        
-        return self.get(url).get('results')
 
 
 
