@@ -820,7 +820,8 @@ def get_Confluence_Newst(request, *args, **kwargs):
     json_body = json.loads(request.body)
     url = json_body.get("url")
     # information = ConfluenceUpdate.objects.filter(url__contains=url)
-    information = ConfluenceNewUpdate.objects.filter(url__contains=url)
+    information = ConfluenceNewUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra'])
+    #  or 'Akil Munusamy Pitchandi' or 'Sharodh Keelamanakudi Ragupathi' or'admin admin'
     list=[]
     for x in information:
         dict={
@@ -836,7 +837,9 @@ def get_Confluence_Newst(request, *args, **kwargs):
 def get_confluence_update_information(request, *args, **kwargs):
     json_body = json.loads(request.body)
     url = json_body.get("url")
-    information = ConfluenceUpdate.objects.filter(url__contains=url)
+  
+    information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra'])
+    
     list=[]
     for x in information:
         dict={
