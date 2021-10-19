@@ -395,11 +395,13 @@ def get_all_update(space_key):
     username = config.atl_username
     password = config.atl_password
 
-        
+    #get all page id
     convert = confluence.get_all_pages_of_space(space_key)
+    
         
     for id in convert:
         data=(confluence.getUpdate(contentId=id))
+        print(data)
         for item in data:
             update=ConfluenceUpdate.objects.create(
                 title=item.get("title"),
