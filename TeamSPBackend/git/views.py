@@ -229,9 +229,11 @@ def getAllContribution(request, *args, **kwargs):
     names = []
     for item in record:
         git_update += item.commit
+        git_change += item.total
         if item.username not in names:
             names.append(item.username)
-        git_change += item.total
+        else:
+            continue
         con_update += IndividualConfluenceContribution.objects.get(
             user_name=item.username).page_count
         con_att += IndividualConfluenceContribution.objects.get(
