@@ -78,7 +78,7 @@ urlpatterns = [
     path('confluence/spaces/<space_key>/getAllupdate', confluence.get_all_update),
     path('confluence/getNewstConfluence/url/<url>', confluence.get_Confluence_Newst),
     path('confluence/getConfluenceUpdate/url/<url>', confluence.get_confluence_update_information),
-    path('confluence/getTest', confluence.getTest),
+    
      
     
     # COMP90082 21 S1 sprint1
