@@ -3,13 +3,14 @@ import logging
 import atlassian
 import urllib3
 from ..api.views.confluence.confluence import log_into_confluence
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
 from datetime import datetime
 import time
 from TeamSPBackend.common import utils
 from TeamSPBackend.api.views.confluence import confluence
 from TeamSPBackend.coordinator.models import Coordinator
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
+
 from django.db import transaction
 from TeamSPBackend.api import config
 from django.conf import settings
@@ -389,8 +390,67 @@ def get_spaces():
     return spaces
 
 
+def get_all_update(space_key):
+   
+    username = config.atl_username
+    password = config.atl_password
+
+        
+    convert = confluence.get_all_pages_of_space(space_key)
+        
+    for id in convert:
+        data=(confluence.getUpdate(contentId=id))
+        for item in data:
+            update=ConfluenceUpdate.objects.create(
+                title=item.get("title"),
+                displayName=item.get("displayName"),
+                time=item.get("Time"),
+                url=item.get("url")
+                
+             )
+
+            update.save()
+
+# def get_all_newest_update(space_key):
+   
+        
+#     convert = confluence.get_all_pages_of_space(space_key)
+        
+#     for id in convert:
+#         data=(confluence.getUpdate(contentId=id))
+#         for item in data:
+#             update=ConfluenceNewUpdate1.objects.create(
+#                 title=item.get("title"),
+#                 displayName=item.get("displayName"),
+#                 url=item.get("url")
+                
+#              )
+
+#             update.save()
+       
+def updateInformationConfluence():
+    records = ProjectCoordinatorRelation.objects.all()
+    for record in records:
+        get_all_update(record.space_key)             
+    
+    print('***updateSuccess***')
+
+        
+        # resp = init_http_response(
+        #     RespCode.success.value.key, RespCode.success.value.msg)
+        
+    
+
+
+
+
+
 # update meeting minutes on a daily basis
 utils.start_schedule(update_meeting_minutes, 60 * 60 * 24)
 utils.start_schedule(update_page_history, 60 * 60 * 24)
 # update page contributions and user list on a daily basis
 utils.start_schedule(update_user_list, 60 * 60 * 24)
+
+utils.start_schedule(updateInformationConfluence, 60 * 60 * 24)
+
+

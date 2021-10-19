@@ -2,10 +2,11 @@ from atlassian import Confluence
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate,ConfluenceNewUpdate
 from TeamSPBackend.common.choices import RespCode
 from django.views.decorators.http import require_http_methods
 from django.http.response import HttpResponse
+from TeamSPBackend.common.github_util import convert
 from TeamSPBackend.common.utils import init_http_response, check_login, make_json_response, init_http_response_my_enum
 from TeamSPBackend.confluence.models import UserList
 from TeamSPBackend.confluence.models import MeetingMinutes
@@ -15,6 +16,124 @@ from TeamSPBackend.project.models import ProjectCoordinatorRelation
 from TeamSPBackend.confluence.models import PageHistory
 from TeamSPBackend.coordinator.models import Coordinator
 from TeamSPBackend.api import config
+from atlassian import Confluence
+from datetime import datetime
+
+
+from atlassian import Confluence
+from datetime import datetime
+
+
+def getIformation(request):
+    try:
+        username = config.atl_username
+        password = config.atl_password
+        confluence = log_into_confluence(username, password)
+       
+        resp=confluence
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+
+@require_http_methods(['GET'])
+def getAllspace(request):
+
+    try:
+        
+        username = config.atl_username
+        password = config.atl_password
+        confluence = log_into_confluence(username, password)
+
+        meetingNotes = confluence.get_all_spaces(start=0, limit=10, expand=None)
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+        resp['data'] = meetingNotes
+
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    
+@require_http_methods(['GET'])
+def getTest(request):
+
+    try:
+        username = config.atl_username
+        password = config.atl_password
+        confluence = log_into_confluence(username, password)
+
+  
+        convert = confluence.history(page_id='78333963')
+        
+        resp = init_http_response(
+            RespCode.success.value.key, RespCode.success.value.msg)
+        list=[]
+        for version in convert:
+            data = {
+            "username": convert.get("lastUpdated").get("by").get("username"),
+            "displayName": convert.get("lastUpdated").get("by").get("displayName"),
+            "createdDate": convert.get("lastUpdated").get("when"),
+            "url": convert.get("lastUpdated").get("_links").get("self"),
+    
+            }
+
+        list.append(data)
+        for page in convert:
+            data.append({
+                'id': page['id'],
+                'type': page['type'],
+                'title': page['title']
+            })
+       
+
+        resp['data'] = list
+        
+
+        
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+
+def getUpdate(contentId):
+  
+    try:
+        # print("entered getUpdate")
+        username = config.atl_username
+        password = config.atl_password
+        confluence = log_into_confluence(username, password)
+       
+      
+        
+        convert = confluence.get_all_version_content_history_by_page_id(content_id=contentId)
+        
+        
+        
+        list=[]
+        for known in convert:
+            # print(confluence.get_all_version_content_history_by_url(known['_links']["self"]))
+            list.append ({
+            # "username": known["by"]["username"],
+            "title": confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['title'],
+            "displayName": known["by"]["displayName"],
+            "Time": known["when"],
+            "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['_links']['webui']
+            
+            })
+            
+        
+        # resp['data'] = convert
+        return list
+        
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
+
 
 
 @require_http_methods(['POST'])
@@ -63,11 +182,16 @@ def get_all_groups(request):
     user = request.session.get('user')
     username = user['atl_username']
     password = user['atl_password']
+  
+   
     try:
         confluence = log_into_confluence(username, password)
         conf_resp = confluence.get_all_groups()
+        
         data = []
         for group in conf_resp:
+            
+            print(group)
             data.append({
                 'type': group['type'],
                 'name': group['name']
@@ -103,7 +227,7 @@ def get_space(request, space_key):
                 'id': conf_homepage['id'],
                 'type': conf_homepage['type'],
                 'title': conf_homepage['title'],
-
+            
             }
         }
         resp = init_http_response(
@@ -124,6 +248,9 @@ def get_pages_of_space(request, space_key):
     user = request.session.get('user')
     username = user['atl_username']
     password = user['atl_password']
+
+
+  
     try:
         confluence = log_into_confluence(username, password)
         conf_resp = confluence.get_all_pages_from_space(space_key)
@@ -143,6 +270,71 @@ def get_pages_of_space(request, space_key):
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
     # Get Page Content by ID (HTML) (lower prio for now)
+
+
+def get_all_pages_of_space(space_key):
+    """Get all the pages under the Confluence Space
+    Method: GET
+    Request: space
+    """
+   
+   
+    username = config.atl_username
+    password = config.atl_password
+   
+ 
+    # try:
+    confluence = log_into_confluence(username, password)
+    conf_resp = confluence.get_all_pages_from_space(space_key)
+    data = []
+    for page in conf_resp:
+            data.append(page['id'])
+
+    # resp['data'] = data
+    return data
+        
+@require_http_methods(['GET'])
+def get_all_update(request, space_key):
+    """Get all the pages under the Confluence Space
+    Method: GET
+    Request: space
+    """
+    user = request.session.get('user')
+    # username = user['atl_username']
+    # password = user['atl_password']
+
+  
+    username = config.atl_username
+    password = config.atl_password
+    try:
+        confluence = log_into_confluence(username, password)
+        
+        convert = get_all_pages_of_space(space_key)
+        
+        for id in convert:
+            data=(getUpdate(contentId=id))
+            for item in data:
+                update=ConfluenceUpdate.objects.create(
+                    title=item.get("title"),
+                    displayName=item.get("displayName"),
+                    time=item.get("Time"),
+                    url=item.get("url")
+                
+                )
+
+                update.save()
+            
+            
+            
+
+        
+        # resp = init_http_response(
+        #     RespCode.success.value.key, RespCode.success.value.msg)
+        
+        return HttpResponse(json.dumps(data), content_type="application/json")
+    except:
+        resp = {'code': -1, 'msg': 'error'}
+        return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 @require_http_methods(['GET'])
@@ -211,6 +403,7 @@ def get_user_details(request, member):
     Method: POST
     Request: member's username
     """
+
     user = request.session.get('user')
     username = user['atl_username']
     password = user['atl_password']
@@ -264,6 +457,7 @@ def get_subject_supervisors(request, subjectcode, year):
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
+
 @require_http_methods(['GET'])
 def get_page_contributors(request, *args, **kwargs):
     """Get a Confluence page's contributors
@@ -273,16 +467,26 @@ def get_page_contributors(request, *args, **kwargs):
     user = request.session.get('user')
     username = user['atl_username']
     password = user['atl_password']
+
+    
     try:
         confluence = log_into_confluence(username, password)
         page_id = kwargs['page_id']
+        # page_id = kwargs['page_id']
+
+        
+        
         # Todo: change these to configurable inputs
         domain = "https://confluence.cis.unimelb.edu.au"
         port = "8443"
-        url = f"{domain}:{port}/rest/api/content/{page_id}/history"
-        parameters = {"expand": "contributors.publishers.users"}
-        conf_resp = requests.get(
-            url, params=parameters, auth=HTTPBasicAuth(username, password)).json()
+        url = f"{domain}:{port}/rest/api/content/{page_id}/history?expand=contributors.publishers.users"
+        
+        
+        # parameters = {"expand": "contributors.publishers.users"}
+        conf_resp = requests.get(url=url, auth=HTTPBasicAuth(username, password))
+            
+            # url=url, params=parameters, auth=HTTPBasicAuth(username, password)).json()
+        convert = json.loads(conf_resp)
         data = {
             "createdBy": conf_resp["createdBy"],
             "createdDate": conf_resp["createdDate"],
@@ -294,6 +498,7 @@ def get_page_contributors(request, *args, **kwargs):
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except:
         resp = {'code': -1, 'msg': 'error'}
+        
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
@@ -302,6 +507,7 @@ def log_into_confluence(username, password):
         url='https://confluence.cis.unimelb.edu.au:8443/',
         username=username,
         password=password,
+        
         verify_ssl=False
     )
     return confluence
@@ -498,3 +704,38 @@ def delete_project(request, *args, **kwargs):
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
+
+
+def get_Confluence_Newst(request, url, *args, **kwargs):
+    
+    information = ConfluenceUpdate.objects.filter(url__contains=u'https://'+url+'/display/COMP900822021SM2SP').exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
+    list=[]
+    for x in information:
+        dict={
+            "title": x.title,
+            'displayName': x.displayName,
+            
+            'url': x.url
+
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+def get_confluence_update_information(request, url, *args, **kwargs):
+    
+    information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
+    
+    list=[]
+    for x in information:
+        dict={
+            "title": x.title,
+            'displayName': x.displayName,
+            'time': x.time,
+            'url': x.url
+
+        }
+        list.append(dict)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+        
+        
+
