@@ -23,20 +23,6 @@ from datetime import datetime
 from atlassian import Confluence
 from datetime import datetime
 
-# baseUrl = "https://confluence.cis.unimelb.edu.au:8443/"
-
-
-# def log_into_confluence(username, password):
-#     confluence = Confluence(
-#        url='https://confluence.cis.unimelb.edu.au:8443/',
-#         username=username,
-#         password=password,
-#         verify_ssl=False
-#     )
-#     return confluence
-
-
-
 
 def getIformation(request):
     try:
@@ -79,7 +65,7 @@ def getTest(request):
         password = config.atl_password
         confluence = log_into_confluence(username, password)
 
-        # meetingNotes = confluence.history(page_id='78334464')
+  
         convert = confluence.history(page_id='78333963')
         
         resp = init_http_response(
@@ -91,10 +77,7 @@ def getTest(request):
             "displayName": convert.get("lastUpdated").get("by").get("displayName"),
             "createdDate": convert.get("lastUpdated").get("when"),
             "url": convert.get("lastUpdated").get("_links").get("self"),
-        # #    get("lastUpdated").
-        #     # "displayName": convert["displayName"],
-        #     # "createdDate": convert["when"],
-        #     # "url": convert["_links"]
+    
             }
 
         list.append(data)
@@ -104,119 +87,31 @@ def getTest(request):
                 'type': page['type'],
                 'title': page['title']
             })
-        # dict = {
-        #     "url": convert.get("html_url"),
-        #     "author": convert.get("commit").get("author").get("name"),
-        #     "date": convert.get("commit").get("author").get("date"),
-        #     "message": convert.get("commit").get("message")
-        # }
-        # list.append(dict)
+       
 
         resp['data'] = list
         
 
-        # return HttpResponse(json.dumps(resp), content_type="application/json")
+        
         return HttpResponse(json.dumps(resp), content_type="application/json")
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
-
-@require_http_methods(['GET'])
-def getTest1(request):
-
-    try:
-    
-        username = config.atl_username
-        password = config.atl_password
-        confluence = log_into_confluence(username, password)
-
-        # meetingNotes = confluence.history(page_id='78334464')
-        convert = confluence.get_subtree_of_content_ids(page_id='78333963')
-        
-        resp = init_http_response(
-            RespCode.success.value.key, RespCode.success.value.msg)
-       
-        
-        # #    get("lastUpdated").
-        #     # "displayName": convert["displayName"],
-        #     # "createdDate": convert["when"],
-        #     # "url": convert["_links"]
-     
-
-        # dict = {
-        #     "url": convert.get("html_url"),
-        #     "author": convert.get("commit").get("author").get("name"),
-        #     "date": convert.get("commit").get("author").get("date"),
-        #     "message": convert.get("commit").get("message")
-        # }
-        # list.append(dict)
-
-        resp['data'] = convert
-        
-
-        # return HttpResponse(json.dumps(resp), content_type="application/json")
-        return HttpResponse(json.dumps(resp), content_type="application/json")
-    except:
-        resp = {'code': -1, 'msg': 'error'}
-        return HttpResponse(json.dumps(resp), content_type="application/json")
-
-
-
-# @require_http_methods(['GET'])
-# def getUpdate(request, contentId):
-#     #  connetnt_id
-#      #page update by version and page id
-#     try:
-#         username = config.atl_username
-#         password = config.atl_password
-#         confluence = log_into_confluence(username, password)
-#         # content_id1=connetnt_id
-      
-#         # convert = confluence.get_content_history_by_version_number(content_id="78333963", version_number="1")
-#         convert = confluence.get_all_version_content_history_by_page_id(content_id=contentId)
-#         # convert = confluence.get_all_version_content_history_by_page_id(content_id="78333963")
-#         # url = 'https://confluence.cis.unimelb.edu.au:8443/rest/experimental/content/78333963/version/1
-        
-        
-#         list=[]
-#         for known in convert:
-#             # print(confluence.get_all_version_content_history_by_url(known['_links']["self"]))
-#             list.append ({
-#             # "username": known["by"]["username"],
-#             "title": confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['title'],
-#             "displayName": known["by"]["displayName"],
-#             "Time": known["when"],
-#             "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['_links']['webui']
-#             # ['content']['_links']['webui']
-#             # https://confluence.cis.unimelb.edu.au:8443//pages/viewpage.action?pageId=78333988
-#             })
-            
-#         resp = init_http_response(
-#             RespCode.success.value.key, RespCode.success.value.msg)
-
-#         # resp['data'] = convert
-#         resp['data'] = list
-#         return HttpResponse(json.dumps(resp), content_type="application/json")
-#     except:
-#         resp = {'code': -1, 'msg': 'error'}
-#         return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
 
 def getUpdate(contentId):
-    #  connetnt_id
-     #page update by version and page id
+  
     try:
         # print("entered getUpdate")
         username = config.atl_username
         password = config.atl_password
         confluence = log_into_confluence(username, password)
-        # content_id1=connetnt_id
+       
       
-        # convert = confluence.get_content_history_by_version_number(content_id="78333963", version_number="1")
+        
         convert = confluence.get_all_version_content_history_by_page_id(content_id=contentId)
-        # convert = confluence.get_all_version_content_history_by_page_id(content_id="78333963")
-        # url = 'https://confluence.cis.unimelb.edu.au:8443/rest/experimental/content/78333963/version/1
+        
         
         
         list=[]
@@ -228,8 +123,7 @@ def getUpdate(contentId):
             "displayName": known["by"]["displayName"],
             "Time": known["when"],
             "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['_links']['webui']
-            # ['content']['_links']['webui']
-            # https://confluence.cis.unimelb.edu.au:8443//pages/viewpage.action?pageId=78333988
+            
             })
             
         
@@ -398,12 +292,7 @@ def get_all_pages_of_space(space_key):
 
     # resp['data'] = data
     return data
-        # HttpResponse(json.dumps(resp), content_type="application/json")
-    # except:
-    #     resp = {'code': -1, 'msg': 'error'}
-    #     return HttpResponse(json.dumps(resp), content_type="application/json")
-
-    # Get Page Content by ID (HTML) (lower prio for now)
+        
 @require_http_methods(['GET'])
 def get_all_update(request, space_key):
     """Get all the pages under the Confluence Space
@@ -818,17 +707,14 @@ def delete_project(request, *args, **kwargs):
 
 
 def get_Confluence_Newst(request, url, *args, **kwargs):
-    # json_body = json.loads(request.body)
-    # url = json_body.get("url")
-    # url = request.session.get('url')
+    
     information = ConfluenceUpdate.objects.filter(url__contains=u'https://'+url+'/display/COMP900822021SM2SP').exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
-                                                    #  confluence.cis.unimelb.edu.au:8443
     list=[]
     for x in information:
         dict={
             "title": x.title,
             'displayName': x.displayName,
-            # 'time': x.time,
+            
             'url': x.url
 
         }
@@ -836,8 +722,7 @@ def get_Confluence_Newst(request, url, *args, **kwargs):
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 def get_confluence_update_information(request, url, *args, **kwargs):
-    # json_body = json.loads(request.body)
-    # url = json_body.get("url")
+    
     information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
     
     list=[]

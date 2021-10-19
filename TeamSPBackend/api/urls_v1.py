@@ -73,8 +73,6 @@ urlpatterns = [
     path('confluence/users/<member>', confluence.get_user_details),
     path('subject/<subjectcode>/<year>/supervisors',
          confluence.get_subject_supervisors),
-    path('confluence/getTest', confluence.getTest),
-    path('confluence/getTest1', confluence.getTest1),
     path('confluence/getUpdate', confluence.getUpdate),
 #     path('confluence/spaces/<space_key>/getAllpage', confluence.get_all_pages_of_space),
     path('confluence/spaces/<space_key>/getAllupdate', confluence.get_all_update),
