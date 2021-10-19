@@ -341,7 +341,8 @@ def getLastCommit(request, *args, **kwargs):
     contributor = GitContribution.objects.filter(space_key=space_key)
     names = []
     for item in contributor:
-        names.append(item.git_username)
+        if item.git_username not in names:
+            names.append(item.git_username)
     list = []
     for x in names:
         name = x
