@@ -15,6 +15,19 @@ class StudentCommitCounts(models.Model):
         db_table = 'student_commit_counts'
 
 
+class GitContribution(models.Model):
+
+    git_username = models.CharField(max_length=256, null=False)
+    username = models.CharField(max_length=256, null=False)
+    commit = models.IntegerField(null=False)
+    total = models.IntegerField(null=False)
+    space_key = models.CharField(max_length=256, null=True)
+    source = models.CharField(max_length=256, null=True)
+
+    class Meta:
+        db_table = 'git_contribution'
+
+
 class GitCommitCounts(models.Model):
     # student_name = models.CharField(max_length=256, null=False)
     space_key = models.CharField(max_length=256, null=False)
@@ -28,14 +41,26 @@ class GitCommitCounts(models.Model):
 class GitMetrics(models.Model):
     space_key = models.CharField(max_length=256, null=False)
     source = models.CharField(max_length=256, null=False)
-    file_count = models.IntegerField(null=False)
-    class_count = models.IntegerField(null=False)
-    function_count = models.IntegerField(null=False)
-    code_lines_count = models.IntegerField(null=False)
-    declarative_lines_count = models.IntegerField(null=False)
-    executable_lines_count = models.IntegerField(null=False)
-    comment_lines_count = models.IntegerField(null=False)
-    comment_to_code_ratio = models.FloatField(null=False)
+    CountDeclClass = models.IntegerField(null=False)
+    CountDeclExecutableUnit = models.IntegerField(null=False)
+    CountDeclFunction = models.IntegerField(null=False)
+    CountDeclMethod = models.IntegerField(null=False)
+    CountDeclMethodAll = models.IntegerField(null=False)
+    CountLine = models.IntegerField(null=False)
+    CountDeclFile = models.IntegerField(null=False)
+    CountLineBlank = models.IntegerField(null=False)
+    CountLineCode = models.IntegerField(null=False)
+    CountLineCodeDecl = models.IntegerField(null=False)
+    CountLineCodeExe = models.IntegerField(null=False)
+    CountLineComment = models.IntegerField(null=False)
+    CountPath = models.IntegerField(null=False)
+    CountStmt = models.IntegerField(null=False)
+    CountStmtDecl = models.IntegerField(null=False)
+    CountStmtExe = models.IntegerField(null=False)
+    Cyclomatic = models.IntegerField(null=False)
+    Essential = models.IntegerField(null=False)
+    MaxNesting = models.IntegerField(null=False)
+    RatioCommentToCode = models.FloatField(null=False)
 
     class Meta:
         db_table = 'git_metrics'
@@ -45,10 +70,23 @@ class FileMetrics(models.Model):
     space_key = models.CharField(max_length=256, null=False)
     source = models.CharField(max_length=256, null=False)
     file_name = models.CharField(max_length=256, null=False)
-    code_lines_count = models.IntegerField(null=False)
-    blank_lines_count = models.IntegerField(null=False)
-    comment_lines_count = models.IntegerField(null=False)
-    comment_to_code_ratio = models.FloatField(null=False)
+    CountDeclClass = models.IntegerField(null=False)
+    CountDeclFunction = models.IntegerField(null=False)
+    CountDeclExecutableUnit = models.IntegerField(null=False)
+    CountLine = models.IntegerField(null=False)
+    CountLineBlank = models.IntegerField(null=False)
+    CountLineCode = models.IntegerField(null=False)
+    CountLineCodeDecl = models.IntegerField(null=False)
+    CountLineCodeExe = models.IntegerField(null=False)
+    CountLineComment = models.IntegerField(null=False)
+    CountPath = models.IntegerField(null=False)
+    CountStmt = models.IntegerField(null=False)
+    CountStmtDecl = models.IntegerField(null=False)
+    CountStmtExe = models.IntegerField(null=False)
+    Cyclomatic = models.IntegerField(null=False)
+    Essential = models.IntegerField(null=False)
+    MaxNesting = models.IntegerField(null=False)
+    RatioCommentToCode = models.FloatField(null=False)
 
     class Meta:
         db_table = 'file_metrics'
@@ -65,3 +103,16 @@ class GitCommit(models.Model):
 
     class Meta:
         db_table = 'git_commit'
+
+
+class CommitChange(models.Model):
+    sha = models.CharField(max_length=256, null=False)
+    date = models.CharField(max_length=256, null=False)
+    source = models.CharField(max_length=256, null=False)
+    space_key = models.CharField(max_length=256, null=False)
+    total = models.IntegerField(null=False)
+    additions = models.IntegerField(null=False)
+    deletions = models.IntegerField(null=False)
+
+    class Meta:
+        db_table = 'commit_change'

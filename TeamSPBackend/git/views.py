@@ -2,10 +2,11 @@ from django.shortcuts import render
 
 # Create your views here.
 from collections import defaultdict
+from TeamSPBackend.common import utils
 
 from django.views.decorators.http import require_http_methods
 from requests.models import Response
-from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics
+from TeamSPBackend.git.models import StudentCommitCounts, GitCommitCounts, GitMetrics, GitCommit, FileMetrics, GitContribution, CommitChange
 from TeamSPBackend.common import utils
 from TeamSPBackend.common.github_util import get_commits, get_und_metrics
 from TeamSPBackend.api.dto.dto import GitDTO
@@ -13,7 +14,7 @@ from TeamSPBackend.common.choices import RespCode
 from TeamSPBackend.common.utils import make_json_response, check_user_login, body_extract, check_body, \
     init_http_response_my_enum
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
-from TeamSPBackend.confluence.models import UserList
+from TeamSPBackend.confluence.models import IndividualConfluenceContribution, UserList
 import time
 import datetime
 from TeamSPBackend.common.utils import transformTimestamp
@@ -88,23 +89,51 @@ def getFileMetrics(request, *args, **kwargs):
             "space_key": space_key,
             "source": x.source,
             "file_name": x.file_name,
-            "code_lines_count": x.code_lines_count,
-            "blank_lines_count": x.blank_lines_count,
-            "comment_lines_count": x.comment_lines_count,
-            "comment_to_code_ratio": x.comment_to_code_ratio,
+            "CountDeclClass": x.CountDeclClass,
+            "CountDeclExecutableUnit": x.CountDeclExecutableUnit,
+            "CountLine": x.CountLine,
+            "CountLineBlank": x.CountLineBlank,
+            "CountDeclFunction": x.CountDeclFunction,
+            "CountLineCode": x.CountLineCode,
+            "CountLineCodeDecl": x.CountLineCodeDecl,
+            "CountLineCodeExe": x.CountLineCodeExe,
+            "CountLineComment": x.CountLineComment,
+            "CountPath": x.CountPath,
+            "CountStmt": x.CountStmt,
+            "CountStmtDecl": x.CountStmtDecl,
+            "CountStmtExe": x.CountStmtExe,
+            "Cyclomatic": x.Cyclomatic,
+            "Essential": x.Essential,
+            "MaxNesting": x.MaxNesting,
+            "RatioCommentToCode": x.RatioCommentToCode,
         }
         list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
 def updateCommits(request, *args, **kwargs):
-    # try:
     json_body = json.loads(request.body)
-    coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
+    coordinator_id = request.session.get('coordinator_id')
+    doUpdate(coordinator_id, space_key)
+    resp = init_http_response_my_enum(RespCode.success)
+    return make_json_response(resp=resp)
+
+
+def autoUpdateCommits():
+    records = ProjectCoordinatorRelation.objects.all()
+    for record in records:
+        doUpdate(record.coordinator_id, record.space_key)
+
+
+def doUpdate(coordinator_id, space_key):
+    # try:
+    coordinator_id = coordinator_id
+    space_key = space_key
     token = getToken(coordinator_id, space_key)
     record = getOwnerRepo(coordinator_id, space_key)
     username = getUserList(space_key)
+    shaRecord = GitCommit.objects.filter(space_key=space_key)
     for item in record:
         owner = item.get("owner")
         repo = item.get("repo")
@@ -116,7 +145,7 @@ def updateCommits(request, *args, **kwargs):
         for x in convert:
             if GitCommit.objects.filter(sha=x.get("sha")).exists():
                 continue
-            if x.get("author").get("login") not in username:
+            if x is None or x.get("author") is None or x.get("author").get("login") not in username:
                 continue
             msg = x.get("commit").get("message")
             if len(msg) > 500:
@@ -131,22 +160,126 @@ def updateCommits(request, *args, **kwargs):
                 source=item.get("source")
             )
             commit.save()
-    # except Exception as e:
-    #     print(e)
-    #     resp = init_http_response_my_enum(RespCode.invalid_parameter)
-    #     return make_json_response(resp=resp)
+
+        # update changes to commit change table
+        for sha in shaRecord:
+            if CommitChange.objects.filter(sha=sha.sha).exists():
+                continue
+            url = baseUrl + "repos/" + owner + "/" + repo + "/commits/" + sha.sha
+            content = requests.get(
+                url=url, headers={'Authorization': 'Bearer ' + token})
+            convert = json.loads(content.text)
+            files = convert.get("files")
+            if files is None:
+                continue
+            change = CommitChange.objects.create(
+                sha=convert.get("sha"),
+                date=sha.date,
+                source=sha.source,
+                space_key=sha.space_key,
+                total=convert.get("stats").get("total"),
+                additions=convert.get("stats").get("additions"),
+                deletions=convert.get("stats").get("deletions"),
+            )
+            change.save()
+
+        # update list contribution
+        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
+        content = requests.get(
+            url=url, headers={'Authorization': 'Bearer ' + token})
+        convert = json.loads(content.text)
+        for x in convert:
+            commit = x.get("total")
+            git_username = x.get("author").get("login")
+            source = item.get("source")
+            count = 0
+            for number in x.get("weeks"):
+                count = count + number.get("a") + number.get("d")
+            if git_username not in username:
+                continue
+            realName = UserList.objects.get(
+                git_username=git_username).user_name
+            if GitContribution.objects.filter(git_username=git_username, space_key=space_key, source=source).exists():
+                GitContribution.objects.filter(
+                    git_username=git_username, space_key=space_key, source=source).update(commit=commit, total=count)
+            else:
+                commit = GitContribution.objects.create(
+                    commit=commit,
+                    git_username=git_username,
+                    username=realName,
+                    total=count,
+                    space_key=space_key,
+                    source=source
+                )
+                commit.save()
     resp = init_http_response_my_enum(RespCode.success)
     return make_json_response(resp=resp)
 
 
+def getAllContribution(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    space_key = json_body.get("space_key")
+    record = GitContribution.objects.filter(space_key=space_key)
+    git_update = 0
+    git_change = 0
+    con_update = 0
+    con_att = 0
+    # con_change=0
+    output = []
+    names = []
+    for item in record:
+        git_update += item.commit
+        if item.username not in names:
+            names.append(item.username)
+        git_change += item.total
+        con_update += IndividualConfluenceContribution.objects.get(
+            user_name=item.username).page_count
+        con_att += IndividualConfluenceContribution.objects.get(
+            user_name=item.username).attendence_count
+        # con_change += IndividualConfluenceContribution.objects.get(user_name=item.username).xxxx_count
+    for item in names:
+        dict = {
+            "realName": item,
+            "git_update_per": (getCommitCount(item, space_key)*100.00)/git_update,
+            "git_change_per": (getTotalCount(item, space_key)*100.00)/git_change,
+            "con_update_per": (IndividualConfluenceContribution.objects.get(user_name=item).page_count*100.00)/con_update,
+            "con_att_per": (IndividualConfluenceContribution.objects.get(user_name=item).attendence_count*100.00)/con_att,
+            # "con_change_per": (IndividualConfluenceContribution.objects.get(user_name=item).xxxx_count*1.00)/con_change,
+        }
+        output.append(dict)
+    return HttpResponse(json.dumps(output), content_type="application/json")
+
+
+def getCommitCount(name, space_key):
+    record = GitContribution.objects.filter(username=name, space_key=space_key)
+    count = 0
+    if record is None:
+        return count
+    for item in record:
+        count += item.commit
+    return count
+
+
+def getTotalCount(name, space_key):
+    record = GitContribution.objects.filter(username=name, space_key=space_key)
+    count = 0
+    if record is None:
+        return count
+    for item in record:
+        count += item.total
+    return count
+
+
 def getCommits(request, *args, **kwargs):
     json_body = json.loads(request.body)
+
     space_key = json_body.get("space_key")
     record = GitCommit.objects.filter(space_key=space_key)
     list = []
     for x in record:
         dict = {
             "date": x.date,
+            "sha": x.sha,
             "author": x.username,
             "url": x.url,
             "message": x.message,
@@ -161,23 +294,39 @@ def listContribution(request, *args, **kwargs):
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
     list = []
-    token = getToken(coordinator_id, space_key)
-    record = getOwnerRepo(coordinator_id, space_key)
-    for item in record:
-        owner = item.get("owner")
-        repo = item.get("repo")
-        url = baseUrl + "repos/" + owner + "/" + repo + "/stats/contributors"
-        content = requests.get(
-            url=url, headers={'Authorization': 'Bearer ' + token})
-        convert = json.loads(content.text)
-        for x in convert:
-            dict = {
-                "commits": x.get("total"),
-                "author": x.get("author").get("login"),
-                "source": item.get("source")
-            }
-            list.append(dict)
+    contributors = GitContribution.objects.filter(space_key=space_key)
+    for user in contributors:
+        dict = {
+            "commits": user.commit,
+            "username": user.username,
+            "git_username": user.git_username,
+            "space_key": user.space_key,
+            "total": user.total,
+            "source": user.source
+        }
+        list.append(dict)
     # return JsonResponse(list)
+    return HttpResponse(json.dumps(list), content_type="application/json")
+
+# changes in one commits
+
+
+def getCommitChanges(request, *args, **kwargs):
+    json_body = json.loads(request.body)
+    coordinator_id = request.session.get('coordinator_id')
+    space_key = json_body.get("space_key")
+    record = getOwnerRepo(coordinator_id, space_key)
+    list = []
+    record = CommitChange.objects.filter(space_key=space_key)
+    for item in record:
+        total = {
+            "date": item.date,
+            "source": item.source,
+            "total": item.total,
+            "additions": item.additions,
+            "deletions": item.deletions,
+        }
+        list.append(total)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
@@ -186,10 +335,14 @@ def getLastCommit(request, *args, **kwargs):
     coordinator_id = request.session.get('coordinator_id')
     space_key = json_body.get("space_key")
     token = getToken(coordinator_id, space_key)
-    users = json_body.get("contributor")
+    # record = getOwnerRepo(coordinator_id,space_key)
+    contributor = GitContribution.objects.filter(space_key=space_key)
+    names = []
+    for item in contributor:
+        names.append(item.git_username)
     list = []
-    for x in users:
-        name = x.get("name")
+    for x in names:
+        name = x
         url = GitCommit.objects.filter(
             username=name, space_key=space_key)[0].url.split("/")
         apiUrl = baseUrl + "repos/" + \
@@ -203,7 +356,8 @@ def getLastCommit(request, *args, **kwargs):
         convert = json.loads(content.text)[0]
         dict = {
             "url": convert.get("html_url"),
-            "author": convert.get("commit").get("author").get("name"),
+            "git_username": convert.get("commit").get("author").get("name"),
+            "user": UserList.objects.get(git_username=name).user_name,
             "date": convert.get("commit").get("author").get("date"),
             "message": convert.get("commit").get("message")
         }
@@ -397,22 +551,56 @@ def save_metrics(data, space_key, source):
     for file in fileMetrics:
         if FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).exists():
             FileMetrics.objects.filter(space_key=space_key, source=source, file_name=file["filename"]).update(
-                code_lines_count=ifExist('CountLineCode', file["attribute"]),
-                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
-                comment_lines_count=ifExist(
+                CountDeclClass=ifExist('CountDeclClass', file["attribute"]),
+                CountDeclExecutableUnit=ifExist(
+                    'CountDeclExecutableUnit', file["attribute"]),
+                CountLine=ifExist('CountLine', file["attribute"]),
+                CountLineBlank=ifExist('CountLineBlank', file["attribute"]),
+                CountLineCode=ifExist('CountLineCode', file["attribute"]),
+                CountLineCodeDecl=ifExist(
+                    'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
+                CountLineCodeExe=ifExist(
+                    'CountLineCodeExe', file["attribute"]),
+                CountLineComment=ifExist(
                     'CountLineComment', file["attribute"]),
-                comment_to_code_ratio=ifExist(
+                CountPath=ifExist('CountPath', file["attribute"]),
+                CountStmt=ifExist('CountStmt', file["attribute"]),
+                CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+                CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+                Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+                Essential=ifExist('Essential', file["attribute"]),
+                MaxNesting=ifExist('MaxNesting', file["attribute"]),
+                RatioCommentToCode=ifExist(
                     'RatioCommentToCode', file["attribute"]),
             )
         else:
             metrics_dto = FileMetrics(
                 space_key=space_key,
                 file_name=file["filename"],
-                code_lines_count=ifExist('CountLineCode', file["attribute"]),
-                blank_lines_count=ifExist('CountLineBlank', file["attribute"]),
-                comment_lines_count=ifExist(
+                CountDeclClass=ifExist('CountDeclClass', file["attribute"]),
+                CountDeclExecutableUnit=ifExist(
+                    'CountDeclExecutableUnit', file["attribute"]),
+                CountLine=ifExist('CountLine', file["attribute"]),
+                CountLineBlank=ifExist('CountLineBlank', file["attribute"]),
+                CountLineCode=ifExist('CountLineCode', file["attribute"]),
+                CountLineCodeDecl=ifExist(
+                    'CountLineCodeDecl', file["attribute"]),
+                CountDeclFunction=ifExist(
+                    'CountDeclFunction', file["attribute"]),
+                CountLineCodeExe=ifExist(
+                    'CountLineCodeExe', file["attribute"]),
+                CountLineComment=ifExist(
                     'CountLineComment', file["attribute"]),
-                comment_to_code_ratio=ifExist(
+                CountPath=ifExist('CountPath', file["attribute"]),
+                CountStmt=ifExist('CountStmt', file["attribute"]),
+                CountStmtDecl=ifExist('CountStmtDecl', file["attribute"]),
+                CountStmtExe=ifExist('CountStmtExe', file["attribute"]),
+                Cyclomatic=ifExist('Cyclomatic', file["attribute"]),
+                Essential=ifExist('Essential', file["attribute"]),
+                MaxNesting=ifExist('MaxNesting', file["attribute"]),
+                RatioCommentToCode=ifExist(
                     'RatioCommentToCode', file["attribute"]),
                 source=source
             )
@@ -421,26 +609,52 @@ def save_metrics(data, space_key, source):
     metrics = metrics[0]
     if GitMetrics.objects.filter(space_key=space_key, source=source).exists():
         GitMetrics.objects.filter(space_key=space_key, source=source).update(
-            file_count=ifExist('CountDeclFile', metrics),
-            class_count=ifExist('CountDeclClass', metrics),
-            function_count=ifExist('CountDeclFunction', metrics),
-            code_lines_count=ifExist('CountLineCode', metrics),
-            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
-            executable_lines_count=ifExist('CountLineCodeExe', metrics),
-            comment_lines_count=ifExist('CountLineComment', metrics),
-            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
+            CountDeclClass=ifExist('CountDeclClass', metrics),
+            CountDeclExecutableUnit=ifExist(
+                'CountDeclExecutableUnit', metrics),
+            CountDeclFunction=ifExist('CountDeclFunction', metrics),
+            CountDeclMethod=ifExist('CountDeclMethod', metrics),
+            CountDeclMethodAll=ifExist('CountDeclMethodAll', metrics),
+            CountLine=ifExist('CountLine', metrics),
+            CountLineBlank=ifExist('CountLineBlank', metrics),
+            CountLineCode=ifExist('CountLineCode', metrics),
+            CountDeclFile=ifExist('CountDeclFile', metrics),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', metrics),
+            CountLineCodeExe=ifExist('CountLineCodeExe', metrics),
+            CountLineComment=ifExist('CountLineComment', metrics),
+            CountPath=ifExist('CountPath', metrics),
+            CountStmt=ifExist('CountStmt', metrics),
+            CountStmtDecl=ifExist('CountStmtDecl', metrics),
+            CountStmtExe=ifExist('CountStmtExe', metrics),
+            Cyclomatic=ifExist('Cyclomatic', metrics),
+            Essential=ifExist('Essential', metrics),
+            MaxNesting=ifExist('MaxNesting', metrics),
+            RatioCommentToCode=ifExist('RatioCommentToCode', metrics),
         )
     else:
         metrics_dto = GitMetrics(
             space_key=space_key,
-            file_count=ifExist('CountDeclFile', metrics),
-            class_count=ifExist('CountDeclClass', metrics),
-            function_count=ifExist('CountDeclFunction', metrics),
-            code_lines_count=ifExist('CountLineCode', metrics),
-            declarative_lines_count=ifExist('CountLineCodeDecl', metrics),
-            executable_lines_count=ifExist('CountLineCodeExe', metrics),
-            comment_lines_count=ifExist('CountLineComment', metrics),
-            comment_to_code_ratio=ifExist('RatioCommentToCode', metrics),
+            CountDeclClass=ifExist('CountDeclClass', metrics),
+            CountDeclExecutableUnit=ifExist(
+                'CountDeclExecutableUnit', metrics),
+            CountDeclFunction=ifExist('CountDeclFunction', metrics),
+            CountDeclMethod=ifExist('CountDeclMethod', metrics),
+            CountDeclMethodAll=ifExist('CountDeclMethodAll', metrics),
+            CountLine=ifExist('CountLine', metrics),
+            CountLineBlank=ifExist('CountLineBlank', metrics),
+            CountLineCode=ifExist('CountLineCode', metrics),
+            CountDeclFile=ifExist('CountDeclFile', metrics),
+            CountLineCodeDecl=ifExist('CountLineCodeDecl', metrics),
+            CountLineCodeExe=ifExist('CountLineCodeExe', metrics),
+            CountLineComment=ifExist('CountLineComment', metrics),
+            CountPath=ifExist('CountPath', metrics),
+            CountStmt=ifExist('CountStmt', metrics),
+            CountStmtDecl=ifExist('CountStmtDecl', metrics),
+            CountStmtExe=ifExist('CountStmtExe', metrics),
+            Cyclomatic=ifExist('Cyclomatic', metrics),
+            Essential=ifExist('Essential', metrics),
+            MaxNesting=ifExist('MaxNesting', metrics),
+            RatioCommentToCode=ifExist('RatioCommentToCode', metrics),
             source=source
         )
         metrics_dto.save()
@@ -470,6 +684,7 @@ def auto_update_metrics():
         get_metrics(relation)
 
 
-# utils.start_schedule(auto_update_commits, 60 * 60 * 24, None)
-# utils.start_schedule(update_individual_commits, 60 * 60 * 24)
-# utils.start_schedule(auto_update_metrics, 60 * 60 * 24)
+utils.start_schedule(auto_update_commits, 60 * 60 * 24, None)
+utils.start_schedule(update_individual_commits, 60 * 60 * 24)
+utils.start_schedule(autoUpdateCommits, 60 * 60 * 24)
+utils.start_schedule(auto_update_metrics, 60 * 60 * 24)

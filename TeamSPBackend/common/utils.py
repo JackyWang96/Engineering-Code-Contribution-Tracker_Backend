@@ -32,11 +32,13 @@ def init_http_response(code, message, data=None):
         data=data,
     )
 
+
 def init_http_response_withoutdata(code, message):
     return dict(
         code=code,
         message=message
     )
+
 
 def init_http_response_my_enum(resp: MyEnum, data=None):
     return init_http_response(resp.key, resp.msg, data)
@@ -55,7 +57,8 @@ def check_body(func):
             logger.info(body)
         except ValueError or json.JSONDecodeError as e:
             logger.info(request.body)
-            resp = init_http_response(RespCode.incorrect_body.value.key, RespCode.incorrect_body.value.msg)
+            resp = init_http_response(
+                RespCode.incorrect_body.value.key, RespCode.incorrect_body.value.msg)
             return make_json_response(HttpResponse, resp)
 
         return func(request, body, *args, **kwargs)
@@ -73,7 +76,8 @@ def check_user_login(roles=None):
         def inner(request, *args, **kwargs):
             user = request.session.get('user', {})
             if not user or 'id' not in user or 'is_login' not in user:
-                resp = init_http_response(RespCode.not_logged.value.key, RespCode.not_logged.value.msg)
+                resp = init_http_response(
+                    RespCode.not_logged.value.key, RespCode.not_logged.value.msg)
                 return make_json_response(HttpResponse, resp)
 
             if roles is not None:
@@ -81,7 +85,8 @@ def check_user_login(roles=None):
                     raise ValueError('check_user_login: incorrect roles')
                 if user['role'] not in roles:
                     logger.info('permission deny %s', func)
-                    resp = init_http_response(RespCode.permission_deny.value.key, RespCode.permission_deny.value.msg)
+                    resp = init_http_response(
+                        RespCode.permission_deny.value.key, RespCode.permission_deny.value.msg)
                     return make_json_response(HttpResponse, resp)
 
             request.session.set_expiry(SESSION_REFRESH)
@@ -100,7 +105,8 @@ def check_login():
         @wraps(func)
         def inner(request, *args, **kwargs):
             if 'coordinator_id' not in request.session or 'coordinator_name' not in request.session:
-                resp = init_http_response(RespCode.not_logged.value.key, RespCode.not_logged.value.msg)
+                resp = init_http_response(
+                    RespCode.not_logged.value.key, RespCode.not_logged.value.msg)
                 return make_json_response(HttpResponse, resp)
 
             request.session.set_expiry(SESSION_REFRESH)
@@ -119,7 +125,8 @@ def check_user_role(func, role):
         user = request.session.get('user', {})
         user_role = user['role']
         if user_role is not role:
-            resp = init_http_response(RespCode.permission_deny.value.key, RespCode.permission_deny.value.msg)
+            resp = init_http_response(
+                RespCode.permission_deny.value.key, RespCode.permission_deny.value.msg)
             return make_json_response(HttpResponse, resp)
 
         return func(request, args, kwargs)
@@ -164,6 +171,7 @@ def decrypt_aes(key):
     aes = AES.new(auto_fill(SALT), AES.MODE_ECB)
     return str(aes.decrypt(base64.decodebytes(key))).rstrip('\0')
 
+
 def start_schedule(func, interval, *args):
     """
     Run function regularly at the given interval.
@@ -175,6 +183,7 @@ def start_schedule(func, interval, *args):
     Timer(0, func, args).start()
     Timer(interval, start_schedule, args=[func, interval, *args]).start()
 
+
 def transformTimestamp(timestamp):
     y = time.localtime(timestamp).tm_year
     m = time.localtime(timestamp).tm_mon
@@ -185,3 +194,28 @@ def transformTimestamp(timestamp):
     # Unified the date to 23:59:59 of the day
     return timeStamp
 
+
+def validateDate(date_text):
+    try:
+        if date_text != datetime.datetime.strptime(date_text, "%Y-%m-%d").strftime('%Y-%m-%d'):
+            return False
+        else:
+            return True
+    except ValueError:
+        return False
+
+
+def meetingFilterBySpaceKey(spaceKey, link):
+    print
+    return spaceKey in link
+
+
+def meetingTypeFilter(title):
+    if "standup" in title.lower():
+        return "Standup"
+    elif ("frontend" in title.lower() or
+          "backend" in title.lower() or
+          "internal" in title.lower()):
+        return "Meeting"
+    else:
+        return "Key date"

@@ -692,7 +692,9 @@ def get_user_list(request, space_key):
                 "name": user_info.user_name,
                 "id": user_info.user_id,
                 "email": user_info.email,
-                "picture": user_info.picture
+                "picture": user_info.picture,
+                "git_name": user_info.git_username,
+                "jira_name": user_info.jira_username
             }
             user_list.append(user_detail)
         resp = init_http_response(
@@ -725,6 +727,9 @@ def get_meeting_minutes(request, space_key):
         for meeting in meeting_minutes:
             data.append({
                 'title': meeting.meeting_title,
+                'start': meeting.start_time,
+                'end': meeting.end_time,
+                'type': meeting.meeting_type,
                 'link': meeting.meeting_link
             })
         resp = init_http_response(

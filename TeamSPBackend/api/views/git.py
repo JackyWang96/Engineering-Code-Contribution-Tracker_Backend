@@ -202,14 +202,26 @@ def get_git_metrics(request, space_key):
     data = []
     for item in metrics_data:
         tmp = {
-            "file_count": int(item.file_count),
-            "class_count": int(item.class_count),
-            "function_count": int(item.function_count),
-            "code_lines_count": int(item.code_lines_count),
-            "declarative_lines_count": int(item.declarative_lines_count),
-            "executable_lines_count": int(item.executable_lines_count),
-            "comment_lines_count": int(item.comment_lines_count),
-            "comment_to_code_ratio": float(item.comment_to_code_ratio),
+            "CountDeclClass": int(item.CountDeclClass),
+            "CountDeclExecutableUnit": int(item.CountDeclExecutableUnit),
+            "CountDeclFunction": int(item.CountDeclFunction),
+            "CountDeclMethod": int(item.CountDeclMethod),
+            "CountDeclMethodAll": int(item.CountDeclMethodAll),
+            "CountLine": int(item.CountLine),
+            "CountDeclFile": int(item.CountDeclFile),
+            "CountLineBlank": int(item.CountLineBlank),
+            "CountLineCode": int(item.CountLineCode),
+            "CountLineCodeDecl": int(item.CountLineCodeDecl),
+            "CountLineCodeExe": int(item.CountLineCodeExe),
+            "CountLineComment": int(item.CountLineComment),
+            "CountPath": int(item.CountPath),
+            "CountStmt": int(item.CountStmt),
+            "CountStmtDecl": int(item.CountStmtDecl),
+            "CountStmtExe": int(item.CountStmtExe),
+            "Cyclomatic": int(item.Cyclomatic),
+            "Essential": int(item.Essential),
+            "MaxNesting": int(item.MaxNesting),
+            "RatioCommentToCode": float(item.RatioCommentToCode),
             "source": str(item.source)
         }
         data.append(tmp)
