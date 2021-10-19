@@ -3,7 +3,7 @@ import logging
 import atlassian
 import urllib3
 from ..api.views.confluence.confluence import log_into_confluence
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate, ConfluenceNewUpdate1
 from datetime import datetime
 import time
 from TeamSPBackend.common import utils
@@ -390,43 +390,56 @@ def get_spaces():
     return spaces
 
 
-def get_all_update(request, space_key):
-    """Get all the pages under the Confluence Space
-    Method: GET
-    Request: space
-    """
-    user = request.session.get('user')
-    # username = user['atl_username']
-    # password = user['atl_password']
+def get_all_update(space_key):
+   
+    username = config.atl_username
+    password = config.atl_password
 
-    space_key='COMP900822021SM2SP'
-    username = "zeyuwang1"
-    password = "zhiyu01!yu"
-    try:
-        confluence = log_into_confluence(username, password)
         
-        convert = confluence.get_all_pages_of_space(space_key)
+    convert = confluence.get_all_pages_of_space(space_key)
         
-        for id in convert:
-            data=(confluence.getUpdate1(contentId=id))
+    for id in convert:
+        data=(confluence.getUpdate(contentId=id))
+        for item in data:
             update=ConfluenceUpdate.objects.create(
-                title=data.get("title"),
-                displayName=data.get("displayName"),
-                time=data.get("time"),
-                url=data.get("url")
-            )
+                title=item.get("title"),
+                displayName=item.get("displayName"),
+                time=item.get("Time"),
+                url=item.get("url")
+                
+             )
 
             update.save()
-            
-            
 
-        print(data)
+# def get_all_newest_update(space_key):
+   
         
+#     convert = confluence.get_all_pages_of_space(space_key)
         
-        return HttpResponse(json.dumps(data), content_type="application/json")
-    except:
-        resp = {'code': -1, 'msg': 'error'}
-        return HttpResponse(json.dumps(resp), content_type="application/json")
+#     for id in convert:
+#         data=(confluence.getUpdate(contentId=id))
+#         for item in data:
+#             update=ConfluenceNewUpdate1.objects.create(
+#                 title=item.get("title"),
+#                 displayName=item.get("displayName"),
+#                 url=item.get("url")
+                
+#              )
+
+#             update.save()
+       
+def updateInformationConfluence():
+    records = ProjectCoordinatorRelation.objects.all()
+    for record in records:
+        get_all_update(record.space_key)             
+    
+    print('***updateSuccess***')
+
+        
+        # resp = init_http_response(
+        #     RespCode.success.value.key, RespCode.success.value.msg)
+        
+    
 
 
 
@@ -437,6 +450,7 @@ utils.start_schedule(update_meeting_minutes, 60 * 60 * 24)
 utils.start_schedule(update_page_history, 60 * 60 * 24)
 # update page contributions and user list on a daily basis
 utils.start_schedule(update_user_list, 60 * 60 * 24)
-utils.start_schedule(get_all_update, 60 * 60 * 24)
+
+utils.start_schedule(updateInformationConfluence, 60 * 60 * 24)
 
 
