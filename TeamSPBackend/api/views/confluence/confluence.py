@@ -2,7 +2,7 @@ from atlassian import Confluence
 import json
 import requests
 from requests.auth import HTTPBasicAuth
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate,ConfluenceNewUpdate
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
 from TeamSPBackend.common.choices import RespCode
 from django.views.decorators.http import require_http_methods
 from django.http.response import HttpResponse
@@ -18,7 +18,6 @@ from TeamSPBackend.coordinator.models import Coordinator
 from TeamSPBackend.api import config
 from atlassian import Confluence
 from datetime import datetime
-
 
 from atlassian import Confluence
 from datetime import datetime
@@ -66,30 +65,30 @@ def getTest(request):
         confluence = log_into_confluence(username, password)
 
   
-        convert = confluence.history(page_id='78333963')
+        convert = confluence.get_page_by_id(page_id='78333963')
         
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
         list=[]
-        for version in convert:
-            data = {
-            "username": convert.get("lastUpdated").get("by").get("username"),
-            "displayName": convert.get("lastUpdated").get("by").get("displayName"),
-            "createdDate": convert.get("lastUpdated").get("when"),
-            "url": convert.get("lastUpdated").get("_links").get("self"),
+        # for version in convert:
+        #     data = {
+        #     "username": convert.get("lastUpdated").get("by").get("username"),
+        #     "displayName": convert.get("lastUpdated").get("by").get("displayName"),
+        #     "createdDate": convert.get("lastUpdated").get("when"),
+        #     "url": convert.get("lastUpdated").get("_links").get("self"),
     
-            }
+        #     }
 
-        list.append(data)
-        for page in convert:
-            data.append({
-                'id': page['id'],
-                'type': page['type'],
-                'title': page['title']
-            })
+        # list.append(data)
+        # for page in convert:
+        #     data.append({
+        #         'id': page['id'],
+        #         'type': page['type'],
+        #         'title': page['title']
+        #     })
        
 
-        resp['data'] = list
+        resp['data'] = convert
         
 
         
@@ -103,26 +102,25 @@ def getTest(request):
 def getUpdate(contentId):
   
     try:
-        # print("entered getUpdate")
+        
         username = config.atl_username
         password = config.atl_password
         confluence = log_into_confluence(username, password)
-       
-      
+        convert = confluence.get_attachment_history(attachment_id=contentId)
         
-        convert = confluence.get_all_version_content_history_by_page_id(content_id=contentId)
+
+        
         
         
         
         list=[]
         for known in convert:
-            # print(confluence.get_all_version_content_history_by_url(known['_links']["self"]))
+            
             list.append ({
-            # "username": known["by"]["username"],
-            "title": confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['title'],
+            "title": confluence.get_page_by_id(contentId)['title'],
             "displayName": known["by"]["displayName"],
             "Time": known["when"],
-            "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_all_version_content_history_by_url(known['_links']["self"]) ['content']['_links']['webui']
+            "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_page_by_id(contentId)['space']["_links"]["webui"]+'/'+confluence.get_page_by_id(contentId)['title']
             
             })
             
@@ -708,7 +706,7 @@ def delete_project(request, *args, **kwargs):
 
 def get_Confluence_Newst(request, url, *args, **kwargs):
     
-    information = ConfluenceUpdate.objects.filter(url__contains=u'https://'+url+'/display/COMP900822021SM2SP').exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
+    information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
     list=[]
     for x in information:
         dict={
@@ -736,6 +734,34 @@ def get_confluence_update_information(request, url, *args, **kwargs):
         }
         list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
+
+def get_all_version_content_history_by_url(self, url):
+        """
+        Get content history by version number
+        :param content_id:
+        :param version_number:
+        :return:
+        """
+        x=url.split('https://confluence.cis.unimelb.edu.au:8443/')
         
+        print(x[1])
+        return self.get(x[1])
+
+def get_all_version_content_history_by_page_id(self, content_id):
+        """
+        Get content history by version number
+        :param content_id:
+        :param version_number:
+        :return:
+        """
+        url = 'rest/experimental/content/{0}/version/'.format(content_id)
+       
+        
+        return self.get(url).get('results')
+
+
+
+
+
         
 

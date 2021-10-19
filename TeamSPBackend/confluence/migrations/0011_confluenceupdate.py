@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('confluence', '0010_update_meetingminutes'),
+        ('confluence', '0010_individualconfluencecontribution_attendence_count'),
     ]
 
     operations = [
