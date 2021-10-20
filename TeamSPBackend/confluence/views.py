@@ -400,7 +400,7 @@ def get_all_update(space_key):
     
         
     for id in convert:
-        data=(confluence.getUpdate(contentId=id))
+        data=(confluence.getUpdate(contentId=id,limit=999999))
         print(data)
         for item in data:
             display_name = item.get("displayName")
@@ -452,11 +452,11 @@ def updateInformationConfluence():
 
 
 # update meeting minutes on a daily basis
-utils.start_schedule(update_meeting_minutes, 60 * 60 * 24)
-utils.start_schedule(update_page_history, 60 * 60 * 24)
-# update page contributions and user list on a daily basis
-utils.start_schedule(update_user_list, 60 * 60 * 24)
+# utils.start_schedule(update_meeting_minutes, 60 * 60 * 24)
+# utils.start_schedule(update_page_history, 60 * 60 * 24)
+# # update page contributions and user list on a daily basis
+# utils.start_schedule(update_user_list, 60 * 60 * 24)
 
-utils.start_schedule(updateInformationConfluence, 60 * 60 * 24)
+# utils.start_schedule(updateInformationConfluence, 60 * 60 * 24)
 
 

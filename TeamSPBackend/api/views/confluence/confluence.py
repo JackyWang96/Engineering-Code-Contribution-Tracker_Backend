@@ -106,7 +106,7 @@ def getUpdate(contentId):
         username = config.atl_username
         password = config.atl_password
         confluence = log_into_confluence(username, password)
-        convert = confluence.get_attachment_history(attachment_id=contentId)
+        convert = confluence.get_attachment_history(attachment_id=contentId, limit=999999)
         
 
         
@@ -241,12 +241,12 @@ def get_pages_of_space(request, space_key):
     Request: space
     """
     user = request.session.get('user')
-    username = user['atl_username']
-    password = user['atl_password']
+    username = config.atl_username
+    password = config.atl_password
 
     try:
         confluence = log_into_confluence(username, password)
-        conf_resp = confluence.get_all_pages_from_space(space_key)
+        conf_resp = confluence.get_all_pages_from_space(space_key, limit=1000)
         data = []
         for page in conf_resp:
             data.append({
@@ -276,7 +276,7 @@ def get_all_pages_of_space(space_key):
 
     # try:
     confluence = log_into_confluence(username, password)
-    conf_resp = confluence.get_all_pages_from_space(space_key)
+    conf_resp = confluence.get_all_pages_from_space(space_key,limit=999999)
     data = []
     for page in conf_resp:
         data.append(page['id'])
@@ -690,13 +690,15 @@ def delete_project(request, *args, **kwargs):
 
 
 def get_Confluence_Newst(request, space_key,*args, **kwargs):
-    record = GitContribution.objects.filter(space_key=space_key)
+    record = GitContribution.objects.values('username').distinct()
+    record=record.filter(space_key=space_key)
     
     list=[]
     
     for y in record:
         username=y.username
         information = ConfluenceUpdate.objects.filter(displayName=username)
+        
         for x in information:
             dict = {
             "title": x.title,
@@ -705,6 +707,8 @@ def get_Confluence_Newst(request, space_key,*args, **kwargs):
 
             }
             list.append(dict)
+            
+            
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
