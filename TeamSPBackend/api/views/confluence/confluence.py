@@ -12,6 +12,7 @@ from TeamSPBackend.confluence.models import UserList
 from TeamSPBackend.confluence.models import MeetingMinutes
 
 from TeamSPBackend.project.models import ProjectCoordinatorRelation
+from TeamSPBackend.git.models import GitContribution
 
 from TeamSPBackend.confluence.models import PageHistory
 from TeamSPBackend.coordinator.models import Coordinator
@@ -66,7 +67,7 @@ def getTest(request):
         confluence = log_into_confluence(username, password)
 
   
-        convert = confluence.get_page_by_id(page_id='78333963')
+        convert = confluence.get_attachment_history()
         
         resp = init_http_response(
             RespCode.success.value.key, RespCode.success.value.msg)
@@ -688,41 +689,44 @@ def delete_project(request, *args, **kwargs):
         return HttpResponse(json.dumps(resp), content_type="application/json")
 
 
-def get_Confluence_Newst(request, url, *args, **kwargs):
+def get_Confluence_Newst(request, space_key,*args, **kwargs):
+    record = GitContribution.objects.filter(space_key=space_key)
     
-    information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=['Ankita Dhar','Akil Munusamy Pitchandi','Sharodh Keelamanakudi Ragupathi','admin admin','Pawan Malhotra','Abdul Rehman Mohammad','YALAN ZHAO'])
     list=[]
-    for x in information:
-        dict = {
+    
+    for y in record:
+        username=y.username
+        information = ConfluenceUpdate.objects.filter(displayName=username)
+        for x in information:
+            dict = {
             "title": x.title,
             'displayName': x.displayName,
-
             'url': x.url
 
-        }
-        list.append(dict)
+            }
+            list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
-def get_confluence_update_information(request, url, *args, **kwargs):
-
-    information = ConfluenceUpdate.objects.filter(url__contains=url).exclude(displayName__in=[
-        'Ankita Dhar', 'Akil Munusamy Pitchandi',  
-        'Sharodh Keelamanakudi Ragupathi', 
-        'admin admin', 'Pawan Malhotra', 
-        'Abdul Rehman Mohammad', 
-        'YALAN ZHAO'])
-
+def get_confluence_update_information(request, space_key,*args, **kwargs):
+    record = GitContribution.objects.filter(space_key=space_key)
+    
+    
     list = []
-    for x in information:
-        dict = {
+    for y in record:
+        username=y.username
+        information = ConfluenceUpdate.objects.filter(displayName=username)
+        
+        for x in information:
+            dict = {
             "title": x.title,
             'displayName': x.displayName,
             'time': x.time,
-            'url': x.url
+            'url': x.url,
+            'space_key': x.space_key
 
-        }
-        list.append(dict)
+            }
+            list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 

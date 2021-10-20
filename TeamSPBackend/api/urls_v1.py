@@ -76,8 +76,8 @@ urlpatterns = [
     path('confluence/getUpdate', confluence.getUpdate),
 #     path('confluence/spaces/<space_key>/getAllpage', confluence.get_all_pages_of_space),
     path('confluence/spaces/<space_key>/getAllupdate', confluence.get_all_update),
-    path('confluence/getNewstConfluence/url/<url>', confluence.get_Confluence_Newst),
-    path('confluence/getConfluenceUpdate/url/<url>', confluence.get_confluence_update_information),
+    path('confluence/getNewstConfluence/spaces/<space_key>', confluence.get_Confluence_Newst),
+    path('confluence/getConfluenceUpdate/spaces/<space_key>', confluence.get_confluence_update_information),
     
      
     
