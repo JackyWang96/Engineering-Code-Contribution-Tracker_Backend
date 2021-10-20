@@ -400,7 +400,7 @@ def get_all_update(space_key):
     
         
     for id in convert:
-        data=(confluence.getUpdate(contentId=id,limit=999999))
+        data=(confluence.getUpdate(contentId=id))
         print(data)
         for item in data:
             display_name = item.get("displayName")
