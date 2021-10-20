@@ -687,7 +687,7 @@ def auto_update_metrics():
         get_metrics(relation)
 
 
-utils.start_schedule(auto_update_commits, 60 * 60 * 24, None)
-utils.start_schedule(update_individual_commits, 60 * 60 * 24)
-utils.start_schedule(autoUpdateCommits, 60 * 60 * 24)
-utils.start_schedule(auto_update_metrics, 60 * 60 * 24)
+# utils.start_schedule(auto_update_commits, 60 * 60 * 24, None)
+# utils.start_schedule(update_individual_commits, 60 * 60 * 24)
+# utils.start_schedule(autoUpdateCommits, 60 * 60 * 24)
+# utils.start_schedule(auto_update_metrics, 60 * 60 * 24)

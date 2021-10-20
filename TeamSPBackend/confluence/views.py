@@ -407,7 +407,8 @@ def get_all_update(space_key):
                 title=item.get("title"),
                 displayName=item.get("displayName"),
                 time=item.get("Time"),
-                url=item.get("url")
+                url=item.get("url"),
+                space_key=item.get("spacekey")
                 
              )
 

@@ -119,8 +119,8 @@ def getUpdate(contentId):
             "title": confluence.get_page_by_id(contentId)['title'],
             "displayName": known["by"]["displayName"],
             "Time": known["when"],
-            "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_page_by_id(contentId)['space']["_links"]["webui"]+'/'+confluence.get_page_by_id(contentId)['title']
-            
+            "url": 'https://confluence.cis.unimelb.edu.au:8443'+confluence.get_page_by_id(contentId)['space']["_links"]["webui"]+'/'+confluence.get_page_by_id(contentId)['title'],
+            'spacekey': confluence.get_page_by_id(contentId)['space']['key']
             })
 
         # resp['data'] = convert
