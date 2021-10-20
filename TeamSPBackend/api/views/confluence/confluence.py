@@ -108,10 +108,6 @@ def getUpdate(contentId):
         confluence = log_into_confluence(username, password)
         convert = confluence.get_attachment_history(attachment_id=contentId, limit=999999)
         
-
-        
-        
-        
         
         list=[]
         for known in convert:
@@ -694,22 +690,33 @@ def get_Confluence_Newst(request, space_key,*args, **kwargs):
     
     list=[]
     titles=[]
+    namelist1=[]
+    list2=[]
+    
     for y in record:
         username=y.username
-        information = ConfluenceUpdate.objects.filter(displayName=username)
+        if y.username not in list2:
+            list2.append(y.username)
+            namelist1.append(username)
         
-        for x in information:
-            if x.title not in titles:
-                titles.append(x.title)
-                dict = {
-                "title": x.title,
-                'displayName': x.displayName,
-                'url': x.url
+    
+    print(namelist1)    
+    # information = ConfluenceUpdate.objects.filter(displayName=username)
+    information = ConfluenceUpdate.objects.filter(displayName__in=namelist1)
+        
+    for x in information:
+        if x.title not in titles:
+            titles.append(x.title)
+            dict = {
+            "title": x.title,
+            'displayName': x.displayName,
+            'url': x.url
 
-                }
-                list.append(dict)
-                
-            
+            }
+               
+            list.append(dict)
+
+                   
     return HttpResponse(json.dumps(list), content_type="application/json")
 
 
@@ -734,6 +741,40 @@ def get_confluence_update_information(request, space_key,*args, **kwargs):
             list.append(dict)
     return HttpResponse(json.dumps(list), content_type="application/json")
 
+def get_confluence_lastest_update(request, space_key,*args, **kwargs):
+    record = GitContribution.objects.filter(space_key=space_key)
+    
+    list=[]
+    displayNamelist=[]
+    namelist=[]
+    list2=[]
+    
+    for y in record:
+        username=y.username
+        if y.username not in list2:
+            list2.append(y.username)
+            namelist.append(username)
+        
+    
+    print(namelist)    
+    # information = ConfluenceUpdate.objects.filter(displayName=username)
+    information = ConfluenceUpdate.objects.filter(displayName__in=namelist)
+        
+    for x in information:
+        if x.time not in displayNamelist:
+            displayNamelist.append(x.displayName)
+            dict = {
+            "title": x.title,
+            'displayName': x.displayName,
+            'time': x.time,
+            'url': x.url
+
+            }
+               
+            list.append(dict)
+
+                   
+    return HttpResponse(json.dumps(list), content_type="application/json")
 
 
 
