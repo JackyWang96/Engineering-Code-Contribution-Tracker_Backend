@@ -3,7 +3,7 @@ import logging
 import atlassian
 import urllib3
 from ..api.views.confluence.confluence import log_into_confluence
-from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes,ConfluenceUpdate
+from TeamSPBackend.confluence.models import PageHistory, UserList, IndividualConfluenceContribution, MeetingMinutes, ConfluenceUpdate
 from datetime import datetime
 import time
 from TeamSPBackend.common import utils
@@ -403,13 +403,16 @@ def get_all_update(space_key):
         data=(confluence.getUpdate(contentId=id))
         print(data)
         for item in data:
+            display_name = item.get("displayName")
+            time = item.get("Time")
+            if ConfluenceUpdate.objects.filter(displayName=display_name,time=time).exists():
+                continue
             update=ConfluenceUpdate.objects.create(
                 title=item.get("title"),
-                displayName=item.get("displayName"),
-                time=item.get("Time"),
+                displayName=display_name,
+                time=time,
                 url=item.get("url"),
-                space_key=item.get("spacekey")
-                
+                space_key=space_key
              )
 
             update.save()
