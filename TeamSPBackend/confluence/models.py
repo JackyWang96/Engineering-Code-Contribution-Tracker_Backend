@@ -53,6 +53,7 @@ class ConfluenceUpdate(models.Model):
     displayName = models.CharField(max_length=256, null=False)
     time = models.CharField(max_length=512, null=False)
     url = models.CharField(max_length=512, null=False)
+    space_key = models.CharField(max_length=512, null=False)
     
 
     class Meta:
