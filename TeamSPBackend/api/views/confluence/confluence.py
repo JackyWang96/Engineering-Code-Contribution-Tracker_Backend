@@ -123,7 +123,7 @@ def getUpdate(contentId):
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
-
+             
 
 @require_http_methods(['POST'])
 def update_git_username(request):
