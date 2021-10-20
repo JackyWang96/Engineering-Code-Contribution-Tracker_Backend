@@ -764,12 +764,12 @@ def get_confluence_lastest_update(request, space_key, *args, **kwargs):
                 list2.append(y.username)
                 namelist.append(username)
 
-        print(namelist)
+       
         # information = ConfluenceUpdate.objects.filter(displayName=username)
-        information = ConfluenceUpdate.objects.filter(displayName__in=namelist)
+        information = ConfluenceUpdate.objects.filter(displayName__in=namelist).order_by('-time')
 
         for x in information:
-            if x.time not in displayNamelist:
+            if x.displayName not in displayNamelist:
                 displayNamelist.append(x.displayName)
                 dict = {
                     "title": x.title,
