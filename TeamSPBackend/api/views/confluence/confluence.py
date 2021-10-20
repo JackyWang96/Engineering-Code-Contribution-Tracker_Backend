@@ -126,7 +126,7 @@ def getUpdate(contentId):
     except:
         resp = {'code': -1, 'msg': 'error'}
         return HttpResponse(json.dumps(resp), content_type="application/json")
-
+             
 
 @require_http_methods(['POST'])
 def update_git_username(request):
@@ -756,12 +756,12 @@ def get_confluence_lastest_update(request, space_key,*args, **kwargs):
             namelist.append(username)
         
     
-    print(namelist)    
+       
     # information = ConfluenceUpdate.objects.filter(displayName=username)
-    information = ConfluenceUpdate.objects.filter(displayName__in=namelist)
+    information = ConfluenceUpdate.objects.filter(displayName__in=namelist).order_by("-time")
         
     for x in information:
-        if x.time not in displayNamelist:
+        if x.displayName not in displayNamelist:
             displayNamelist.append(x.displayName)
             dict = {
             "title": x.title,
