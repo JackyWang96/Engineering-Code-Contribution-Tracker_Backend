@@ -690,24 +690,25 @@ def delete_project(request, *args, **kwargs):
 
 
 def get_Confluence_Newst(request, space_key,*args, **kwargs):
-    record = GitContribution.objects.values('username').distinct()
-    record=record.filter(space_key=space_key)
+    record = GitContribution.objects.filter(space_key=space_key)
     
     list=[]
-    
+    titles=[]
     for y in record:
         username=y.username
         information = ConfluenceUpdate.objects.filter(displayName=username)
         
         for x in information:
-            dict = {
-            "title": x.title,
-            'displayName': x.displayName,
-            'url': x.url
+            if x.title not in titles:
+                titles.append(x.title)
+                dict = {
+                "title": x.title,
+                'displayName': x.displayName,
+                'url': x.url
 
-            }
-            list.append(dict)
-            
+                }
+                list.append(dict)
+                
             
     return HttpResponse(json.dumps(list), content_type="application/json")
 
