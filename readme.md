@@ -16,13 +16,13 @@ It provides REST apis for students activities data on Confluence, Jira, and Git.
 
 **Essential Updates on the databse**
 
-1.coordinator table:
+1. coordinator table:
 The system need a coordinator record to run a series of functions, we suggest to set "admin" as one of the coordinator_name  
-2.project_coordinator_relation table:  
+2. project_coordinator_relation table:  
 Fill each attributes in this table, please pay attention to attribute "coordinator_id", this attribute should be the same as the "id" of coordinator "admin" in coordinator table.  
 we potentially consider "git_url" attribute as the frontend repository url of your project.  
 Besides, git_token can be acquired from your github account which have access to the "git_url" and "git_backend_url", the tutorial is available on https://catalyst.zoho.com/help/tutorials/githubbot/generate-access-token.html.  
-3.user_list table:  
+3. user_list table:  
 this table may be automatically update once backende server is started, but it will only update data of users who made update on confluence page. developer should add "git_username" to correcponding account. But this attribute can also be edited by frontend project overview page.
 
 
@@ -36,12 +36,12 @@ The database models for the objects used in our APIs are written as modules of t
 
 To create new models and/or APIs utilizing them, kindly follow the current directory structure and format:
 
-- Database models in its own module. E.g. "TeamSPBackend/newModel/" containing the files "app.py" and "models.py"
-- Functions for new APIs under "TeamSPBackend/api/views/". E.g. "TeamSPBackend/api/views/newModel.py"
-- API endpoints (URLs) in "TeamSPBackend/api/urls_vX.py" for version X
-- For any API functions that require multiple files, put those files under a sub-folder in "TeamSPBackend/api/views/". E.g. "TeamSPBackend/api/views/newModel/"
+- Database models in its own module. E.g. "TeamSPBackend/newModel/" containing the files "app.py" and "models.py"  
+- Functions for new APIs under "TeamSPBackend/api/views/". E.g. "TeamSPBackend/api/views/newModel.py"  
+- API endpoints (URLs) in "TeamSPBackend/api/urls_vX.py" for version X  
+- For any API functions that require multiple files, put those files under a sub-folder in "TeamSPBackend/api/views/". E.g. "TeamSPBackend/api/views/newModel/"   
 
-## System while runtime
+## System while runtime 
 
 ### MySQL Database Update:
 
@@ -51,8 +51,12 @@ Some of functions will be called to update the database everytime running the ba
 
 The frontend can fetch data via RESTful APIs once the database is successfully updated. The usage of APIs related to different platforms will be briefly introduced below (More details on https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/11.+API+Documents). 
 
-**Confluence**
-`api/v1/confluence/<space_key>/meeting_minutes` is for passing all information about meeting minutes on Confluence including title, time, type of meeting and URL. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/<space_key>/meeting_minutes` to test it
-`api/v1/confluence/getNewstConfluence/spaces/<space_key>` is for passing all information related to documentation pages on Confluence including title, person who made lastest change and URL. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getNewstConfluence/spaces/<space_key>` on command to test it. 
-`api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` is for passing all information about history of modification on Confluence including title and modification history, and people who have made changes. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` on command to test it. 
-`api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` is for passing information about the most recent update by team members on Confluence. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` to test it. 
+**Confluence**  
+
+`api/v1/confluence/<space_key>/meeting_minutes` is for passing all information about meeting minutes on Confluence including title, time, type of meeting and URL. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/<space_key>/meeting_minutes` to test it.   
+
+`api/v1/confluence/getNewstConfluence/spaces/<space_key>` is for passing all information related to documentation pages on Confluence including title, person who made lastest change and URL. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getNewstConfluence/spaces/<space_key>` on command to test it.  
+
+`api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` is for passing all information about history of modification on Confluence including title and modification history, and people who have made changes. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` on command to test it.  
+
+`api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` is for passing information about the most recent update by team members on Confluence. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` to test it.  
