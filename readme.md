@@ -30,3 +30,18 @@ To create new models and/or APIs utilizing them, kindly follow the current direc
 - API endpoints (URLs) in "TeamSPBackend/api/urls_vX.py" for version X
 - For any API functions that require multiple files, put those files under a sub-folder in "TeamSPBackend/api/views/". E.g. "TeamSPBackend/api/views/newModel/"
 
+## System while runtime
+
+### MySQL Database Update:
+
+Some of functions will be called to update the database everytime running the backend server with `python manage.py runserver`. It is because these functions are scheduled in views.py (E.g. "TeamSPBackend/confluence/views.py"). The database should be updated successfully when there is no new log on the terminal. 
+
+### APIs Usage:
+
+The frontend can fetch data via RESTful APIs once the database is successfully updated. The usage of APIs related to different platforms will be briefly introduced below (More details on https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/11.+API+Documents). 
+
+**Confluence**
+`api/v1/confluence/<space_key>/meeting_minutes` is for passing all information about meeting minutes on Confluence including title, time, type of meeting and URL. The required input is space key.
+`api/v1/confluence/getNewstConfluence/spaces/<space_key>` is for passing all information related to documentation pages on Confluence including title, person who made lastest change and URL. The required input is space key.
+`api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` is for passing all information about history of modification on Confluence including title and modification history, and people who have made changes. The required input is space key.
+`api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` is for passing information about the most recent update on Confluence. 
