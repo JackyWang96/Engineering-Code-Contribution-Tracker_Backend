@@ -14,6 +14,17 @@ It provides REST apis for students activities data on Confluence, Jira, and Git.
 5. start server `python manage.py runserver`
 6. api web server is now running on: http://127.0.0.1:8000/api/v1
 
+**Essential Updates on the databse**
+
+1.coordinator table:
+The system need a coordinator record to run a series of functions, we suggest to set "admin" as one of the coordinator_name
+2.project_coordinator_relation table:
+Fill each attributes in this table, please pay attention to attribute "coordinator_id", this attribute should be the same as the "id" of coordinator "admin" in coordinator table.
+we potentially consider "git_url" attribute as the frontend repository url of your project.
+Besides, git_token can be acquired from your github account which have access to the "git_url" and "git_backend_url", the tutorial is available on https://catalyst.zoho.com/help/tutorials/githubbot/generate-access-token.html.
+3.user_list table:
+this table may be automatically update once backende server is started, but it will only update data of users who made update on confluence page. developer should add "git_username" to correcponding account. But this attribute can also be edited by frontend project overview page.
+
 
 ### Structuring files
 
