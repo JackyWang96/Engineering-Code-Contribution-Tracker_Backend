@@ -1,4 +1,4 @@
-# unimelb-COMP90082-SP-Backend
+# UniMelb_COMP90082_SP_Backend
 This is the backend for COMP90082 SP project.
 It provides REST apis for students activities data on Confluence, Jira, and Git.
 
@@ -51,6 +51,15 @@ Some of functions will be called to update the database everytime running the ba
 
 The frontend can fetch data via RESTful APIs once the database is successfully updated. The usage of APIs related to different platforms will be briefly introduced below (More details on https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/11.+API+Documents). 
 
+### Curl Test:
+
+https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/17-2.+Quality+Assurance+and+Testing  
+
+**Configuration** 
+
+`api/v1/sso/login` is for login. The required input is username and password. Run `curl -X POST -d "{""username"":""admin"", ""password"": ""123""}" http://127.0.0.1:8000/api/v1/sso/login` to test it.   
+
+
 **Confluence**  
 
 `api/v1/confluence/<space_key>/meeting_minutes` is for passing all information about meeting minutes on Confluence including title, time, type of meeting and URL. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/<space_key>/meeting_minutes` to test it.   
@@ -60,3 +69,5 @@ The frontend can fetch data via RESTful APIs once the database is successfully u
 `api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` is for passing all information about history of modification on Confluence including title and modification history, and people who have made changes. The required input is space key. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceUpdate/spaces/<space_key>` on command to test it.  
 
 `api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` is for passing information about the most recent update by team members on Confluence. Run `curl --location --request GET http://127.0.0.1:8000/api/v1/confluence/getConfluenceLastestUpdate/spaces/<space_key>` to test it.  
+
+
