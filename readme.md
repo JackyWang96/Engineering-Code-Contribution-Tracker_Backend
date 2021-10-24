@@ -83,6 +83,8 @@ https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/17-2.+Qual
 
 `getFileMetrics` is for getFileMetrics. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/getFileMetrics` to test it.   
 
+`api/v1/git/metrics/<space_key>` is for save and get repository metric. The required input is space_key. Run `http://127.0.0.1:8000/api/v1/git/metrics/COMP900822021SM2SP` to test it.  
+
 
 **Confluence**  
 
