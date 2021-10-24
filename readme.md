@@ -59,6 +59,30 @@ https://confluence.cis.unimelb.edu.au:8443/display/COMP900822021SM2SP/17-2.+Qual
 
 `api/v1/sso/login` is for login. The required input is username and password. Run `curl -X POST -d "{""username"":""admin"", ""password"": ""123""}" http://127.0.0.1:8000/api/v1/sso/login` to test it.   
 
+`api/v1/confluence/updateGitUsername` is for setting git_username in user_list table. The required input is user_id and git_username. Run `curl -X POST -d "{""user_id"":""your_user_id"",""git_username"":""your_git_username""}" http://127.0.0.1:8000/api/v1/confluence/updateGitUsername` to test it. 
+
+`api/v1/confluence/updateJiraUsername` is for setting jira_username in user_list table. The required input is user_id and jira_username. Run `curl -X POST -d "{""user_id"":""your_user_id"",""jira_username"":""your_jira_username""}" http://127.0.0.1:8000/api/v1/confluence/updateJiraUsername` to test it. 
+
+`api/v1/confluence/updateJiraUsername` is for setting jira_username in user_list table. The required input is user_id and jira_username. Run `curl -X POST -d "{""user_id"":""your_user_id"",""jira_username"":""your_jira_username""}" http://127.0.0.1:8000/api/v1/confluence/updateJiraUsername` to test it. 
+
+
+**Github** 
+
+`updateCommits` is for updateCommits. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/updateCommits` to test it.   
+
+`getCommits` is for getCommits. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/getCommits` to test it.   
+
+`listContribution` is for listContribution. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/listContribution` to test it.   
+
+`getLastCommit` is for getLastCommit. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/getLastCommit` to test it.   
+
+`api/v1/git/config` is for configurate project accessment. The required input is space_key, jira_url, git_username, git_password, git_token, git_url, git_backend_url. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP"",""jira_url"":""https://jira.cis.unimelb.edu.au:8444/projects/COMP900822021SM2SP"",""git_username"":""admin"",""git_password"":""123"",""git_token"":""your_git_token"",""git_url"":""https://github.com/Melb-Uni/SP-Boxjelly_Frontend"",""git_backend_url"":""https://github.com/Melb-Uni/SP-Boxjelly_Backend""}" http://127.0.0.1:8000/api/v1/git/config` to test it.   
+
+
+**SciTools** 
+
+`getFileMetrics` is for getFileMetrics. The required input is space_key. Run `curl -X POST -d "{""space_key"":""COMP900822021SM2SP""}" http://127.0.0.1:8000/getFileMetrics` to test it.   
+
 
 **Confluence**  
 
